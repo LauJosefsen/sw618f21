@@ -51,6 +51,7 @@ jobs:
           node-version: 12
       - name: Npm install
         run: |
+          ls
           npm install
       - name: eslint (TypeScript)
         uses: icrawl/action-eslint@v1
