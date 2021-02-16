@@ -40,7 +40,8 @@ jobs:
           # skip-isort: # optional
         # This workflow contains a single job called "build"
   typescript-code-quality:
-    working-directory: /src/visual/
+    env:
+      working-directory: /src/visual/
     runs-on: ubuntu-latest
     steps:
       - name: Node setup
