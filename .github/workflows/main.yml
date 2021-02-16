@@ -71,5 +71,5 @@ jobs:
       - name: docker up
         run: docker-compose up -d
       - name: Run test suite
-        run: docker exec sw618f21_api_1 pytest
+        run: docker exec api pytest
 

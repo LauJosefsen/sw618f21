@@ -1,14 +1,20 @@
 version: "3.9"
 services:
   api:
+    container_name: api
     build: ./src/api
     ports:
       - "5000:5000"
+    volumes: ['./src/api:/api']
+    environment:
+      FLASK_DEBUG: 1
   db:
+    container_name: db
     build: ./src/db
     ports:
       - "5432:5432"
   visual:
+    container_name: visual
     build: ./src/visual
     ports:
       - "3000:3000"

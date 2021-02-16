@@ -5,4 +5,5 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "hi"
+    meh = [x for x in range(1, 30)]
+    return {'hva': meh}
