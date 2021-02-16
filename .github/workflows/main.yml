@@ -40,6 +40,17 @@ jobs:
           # skip isort checks
           # skip-isort: # optional
         # This workflow contains a single job called "build"
+      - name: Node setup
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+        run: |
+          npm install
+      - name: eslint (TypeScript)
+        uses: icrawl/action-eslint@v1
+        with:
+          custom-glob: apps # only if a different glob is needed, default: src
+
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
