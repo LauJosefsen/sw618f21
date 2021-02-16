@@ -42,7 +42,7 @@ jobs:
         # This workflow contains a single job called "build"
       - name: Go into npm dir
         run: |
-          cd /src/visual/
+          cd ./src/visual/
       - name: Node setup
         uses: actions/setup-node@v1
         with:
