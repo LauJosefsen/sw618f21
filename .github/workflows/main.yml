@@ -19,6 +19,7 @@ jobs:
     
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
       - name: pylinter
         # You may pin to the exact commit or the version.
         # uses: alexanderdamiani/pylinter@f9e3029cf605992791a0ee1b44c152483bc9f3b9
