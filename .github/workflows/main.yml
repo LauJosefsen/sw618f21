@@ -40,6 +40,9 @@ jobs:
           # skip isort checks
           # skip-isort: # optional
         # This workflow contains a single job called "build"
+      - name: Go into npm dir
+        run: |
+          cd /src/visual/
       - name: Node setup
         uses: actions/setup-node@v1
         with:
@@ -67,5 +70,5 @@ jobs:
       - name: docker up
         run: docker-compose up -d
       - name: Run test suite
-        run: docker exec api pytest --skip-auth
+        run: docker exec sw618f21_api_1 pytest --skip-auth
 
