@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  api:
+    build: ./src/api
+    ports:
+      - "5000:5000"
+  db:
+    build: ./src/db
+    ports:
+      - "5432:5432"
+  visual:
+    build: ./src/visual
+    ports:
+      - "8000:8000"
