@@ -63,4 +63,8 @@ jobs:
       # Runs a single command using the runners shell
       - name: docker compose build
         run: docker-compose build
+      - name: docker up
+        run: docker-compose up -d
+      - name: Run test suite
+        run: docker exec api pytest --skip-auth
 
