@@ -15,8 +15,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  code-quality:
-    
+  python-code-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -40,18 +39,19 @@ jobs:
           # skip isort checks
           # skip-isort: # optional
         # This workflow contains a single job called "build"
+  typescript-code-quality:
+    working-directory: /src/visual/
+    runs-on: ubuntu-latest
+    steps:
       - name: Node setup
         uses: actions/setup-node@v1
         with:
           node-version: 12
       - name: Npm install
         run: |
-          cd ./src/visual/
           npm install
       - name: eslint (TypeScript)
         uses: icrawl/action-eslint@v1
-        with:
-          custom-glob: src/visual/ # only if a different glob is needed, default: src
 
   build:
     # The type of runner that the job will run on
