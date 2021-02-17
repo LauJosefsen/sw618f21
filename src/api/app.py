@@ -1,3 +1,4 @@
+import psycopg2 as psycopg2
 from flask import Flask
 
 app = Flask(__name__)
@@ -5,5 +6,13 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    meh = [x for x in range(1, 30)]
-    return {'hva': meh}
+    connection = psycopg2.connect(user="postgres",
+                                  password="password",
+                                  host="db",
+                                  port="5432",
+                                  database="database")
+    cursor = connection.cursor()
+    query = "SELECT * FROM table"
+
+    cursor.execute(query)
+    return {"rows": cursor.fetchall()}
