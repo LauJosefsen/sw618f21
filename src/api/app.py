@@ -1,20 +1,11 @@
-import psycopg2 as psycopg2
 from flask import Flask
+from container import Container
+import controller.ais_data_controller
 
+container = Container()
 app = Flask(__name__)
+container.wire(modules=[controller.ais_data_controller])
+app.container = container
+app.add_url_rule('/', 'index', controller.ais_data_controller.index)
 
 
-@app.route("/")
-def index():
-    connection = psycopg2.connect(
-        user="postgres",
-        password="password",
-        host="db",
-        port="5432",
-        database="database",
-    )
-    cursor = connection.cursor()
-    query = "SELECT * FROM table"
-
-    cursor.execute(query)
-    return {"rows": cursor.fetchall()}

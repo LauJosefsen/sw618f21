@@ -2,3 +2,4 @@ flask
 redis
 pytest
 psycopg2
+dependency-injector
