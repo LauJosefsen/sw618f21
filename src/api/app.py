@@ -11,7 +11,7 @@ def index():
         password="password",
         host="db",
         port="5432",
-        database="database"
+        database="database",
     )
     cursor = connection.cursor()
     query = "SELECT * FROM table"
