@@ -1,6 +1,5 @@
-
-
 CREATE DATABASE ais;
+
 
 \c ais;
 
