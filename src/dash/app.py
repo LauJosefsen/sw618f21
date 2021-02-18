@@ -11,6 +11,9 @@ import dash_table
 import plotly.express as px
 
 import pandas as pd
+import pathlib
+
+dir_path = pathlib.Path().absolute()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -28,7 +31,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 colnames = ['Date', 'Class', 'MMSI', 'lat', 'lon', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign', 'Name', 'ShipType', 'CargoType', 'Width', 'Length', 'TypeOfPosFixingDevice', 'Draught', 'Destination', 'ETA', 'DataSourceType', 'SizeA', 'SizeB', 'SizeC', 'SizeD'] # giving our AIS data some col. names
 
 # Loading data using read_csv and passing in col. names
-ais_data = pd.read_csv("test_data/10k_aisdk_20210209.csv", header=None, names=colnames)
+ais_data = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
 
 # Some test code to use the different data for the components, this can be copied in callback methods and sorted (probably makes more sense).
 #ais_data = ais_data.loc[ais_data['Name'] == "NKT VICTORIA"]

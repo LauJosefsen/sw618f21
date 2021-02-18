@@ -22,3 +22,8 @@ services:
     build: ./src/visual
     ports:
       - "3000:3000"
+  dash:
+    container_name: dash
+    build: ./src/dash
+    ports:
+      - "4000:4000"
