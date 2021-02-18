@@ -13,9 +13,10 @@ import plotly.express as px
 import pandas as pd
 import pathlib
 
-dir_path = pathlib.Path().absolute()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+df = px.data.tips()
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -59,7 +60,8 @@ app.layout = html.Div([
 
     html.Div(id='output-chart'),
     html.Br(),
-    dcc.Graph(id='ais_ship_types', figure={}),
+    # pie charts:
+    dcc.Graph(id="pie-chart", figure={}),
 
     # Upload data
     dcc.Upload(
