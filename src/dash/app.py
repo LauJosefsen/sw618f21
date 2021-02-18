@@ -167,4 +167,4 @@ def show_graph(dummy_input2):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', port=4000, debug=True)
