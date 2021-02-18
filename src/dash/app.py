@@ -61,7 +61,7 @@ app.layout = html.Div([
     html.Div(id='output-chart'),
     html.Br(),
     # pie charts:
-    dcc.Graph(id="pie-chart", figure={}),
+    dcc.Graph(id="ais_ship_types", figure={}),
 
     # Upload data
     dcc.Upload(
