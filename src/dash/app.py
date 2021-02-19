@@ -7,13 +7,11 @@ import dash_html_components as html
 import dash_table
 import plotly.express as px
 import pandas as pd
-import pathlib
-
 from dash.dependencies import Input, Output, State
 
-dir_path = pathlib.Path().absolute()
-
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+df = px.data.tips()
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
