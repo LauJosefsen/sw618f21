@@ -152,8 +152,6 @@ def show_graph(graph_input):
 @app.callback(Output('ais_ship_types', 'figure'), Input('piechart_input', 'value'))
 def show_piechart(piechart_input):
     # Showing type of piechart based on input
-    # TODO Implement
-
     updated_ais_data = ais_df # saving it again in case we messing with it
     piechart = px.pie(updated_ais_data, names=piechart_input, title='Ship types')
     return piechart
