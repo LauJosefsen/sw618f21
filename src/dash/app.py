@@ -1,17 +1,15 @@
 import base64
 import datetime
 import io
-
 import dash
-from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
-
 import plotly.express as px
-
 import pandas as pd
 import pathlib
+
+from dash.dependencies import Input, Output, State
 
 dir_path = pathlib.Path().absolute()
 
@@ -23,7 +21,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 colnames = ['Date', 'Class', 'MMSI', 'lat', 'lon', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign', 'Name', 'ShipType', 'CargoType', 'Width', 'Length', 'TypeOfPosFixingDevice', 'Draught', 'Destination', 'ETA', 'DataSourceType', 'SizeA', 'SizeB', 'SizeC', 'SizeD'] # giving our AIS data some col. names
 
 # Loading data in a Pandas data frame using data using read_csv and passing in col. names
-ais_data = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
+ais_df = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
 
 # Dash components section
 app.layout = html.Div([
@@ -49,11 +47,12 @@ app.layout = html.Div([
     html.H3("Pie Chart Testing"),
     dcc.Dropdown(id="piechart_input",
                  options=[
-                     {"label": "ship types", "value": 2015},
-                     {"label": "cargo types", "value": 2016},
+                     {"label": "ship types", "value": "ShipType"},
+                     {"label": "cargo types", "value": "CargoType"},
+                    {"label": "class types", "value": "Class"},
                      ],
                  multi=False,
-                 value=2015,
+                 value="ShipType",
                  style={'width': "40%"}
                  ),
 
@@ -139,11 +138,11 @@ def show_graph(graph_input):
 
     # Showing type of graph based on input
     if(graph_input == "timestamp"):
-        updated_ais_data = ais_data.loc[ais_data['Date'] == "09/02/2021 01:16:47"]
+        updated_ais_data = ais_df.loc[ais_df['Date'] == "09/02/2021 01:16:47"]
     elif(graph_input == "one_ship"):
-        updated_ais_data = ais_data.loc[ais_data['Name'] == "NKT VICTORIA"]
+        updated_ais_data = ais_df.loc[ais_df['Name'] == "NKT VICTORIA"]
     else:
-        updated_ais_data = ais_data
+        updated_ais_data = ais_df
 
     fig = px.scatter_mapbox(updated_ais_data, lat="lat", lon="lon", hover_name="Name", hover_data=['Date', 'Class', 'MMSI', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign', 'Name', 'ShipType'],
                             color_discrete_sequence=["red"], zoom=3, height=300)
@@ -157,9 +156,9 @@ def show_piechart(piechart_input):
     # Showing type of piechart based on input
     # TODO Implement
 
-    updated_ais_data = ais_data # saving it again in case we messing with it
-    fig = px.pie(updated_ais_data, values='ShipType', names='Class', title='Ship types')
-    return fig
+    updated_ais_data = ais_df # saving it again in case we messing with it
+    piechart = px.pie(updated_ais_data, names=piechart_input, title='Ship types')
+    return piechart
 
 
 if __name__ == '__main__':
