@@ -10,7 +10,7 @@ def index(ais_data_service: AisDataService = Provide[Container.ais_data_service]
 
 @inject
 def import_ais_data(
-        ais_data_service: AisDataService = Provide[Container.ais_data_service]
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
     ais_data_service.import_ais_data()
     return ""
