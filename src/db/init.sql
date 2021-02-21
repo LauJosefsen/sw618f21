@@ -1,7 +1,7 @@
 CREATE DATABASE ais;
 
 
-\c ais;
+\c ais
 
 CREATE SCHEMA ais;
 

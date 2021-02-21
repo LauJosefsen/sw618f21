@@ -1,6 +1,9 @@
 import controller.ais_data_controller
 from container import Container
 from flask import Flask
+from importer import Importer
+
+Importer().import_files("./import")
 
 container = Container()
 app = Flask(__name__)
