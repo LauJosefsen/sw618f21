@@ -96,7 +96,7 @@ class AisDataService:
         if str_input == "nan":
             return None
         str_input = str_input.replace("\\", "\\\\")
-        str_input = str_input.replace(",", "\,")
+        str_input = str_input.replace(",", r"\,")
         return str_input
 
     @staticmethod
