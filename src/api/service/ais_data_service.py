@@ -1,9 +1,10 @@
-import csv
+import os
+from datetime import datetime
+
+import numpy as np
 import psycopg2
-from typing import List
-
-from model.ais_data_entry import AisDataEntry
-
+import pandas as pd
+import d6tstack.utils
 
 class AisDataService:
     dsn = "dbname=ais user=postgres password=password host=db"
@@ -17,44 +18,79 @@ class AisDataService:
             database="ais",
         )
 
-    def fetch_all(self):
+    def fetch_limit(self, limit, offset=0):
+        # Does not really fetch all. lol
         cursor = self.connection.cursor()
-        query = "SELECT * FROM ais.data"
+        query = "SELECT * FROM public.data LIMIT %s OFFSET %s;"
 
-        cursor.execute(query)
+        cursor.execute(query, (limit, offset))
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
-    def insert_many(self, objects: List[AisDataEntry]):
-        conn = None
-        try:
-            conn = psycopg2.connect(self.dsn)
-            cur = conn.cursor()
-            # execute 1st statement
-            count = 0
-            for ade in objects:
-                count = count + 1
-                cur.execute(
-                    """INSERT INTO ais.data (
-                    timestamp, mobile_type, mmsi, latitude, longitude, nav_stat, rot, sog, cog, heading, imo, callsign,
-                    name, ship_type, cargo_type, width, length, position_fixing_device_type, draught, eta,
-                    data_src_type, destination, a, b, c, d) VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (ade.timestamp.isoformat(), ade.mobile_type, ade.mmsi, ade.latitude, ade.longitude, ade.nav_stat,
-                     ade.rot, ade.sog, ade.cog, ade.heading, ade.imo, ade.callsign, ade.name, ade.ship_type,
-                     ade.cargo_type, ade.width, ade.length, ade.position_fixing_device_type, ade.draught,
-                     ade.eta.isoformat() if ade.eta else None,
-                     ade.data_src_type, ade.destination, ade.a, ade.b, ade.c, ade.d)
-                )
-            conn.commit()
-            # close the database communication
-            cur.close()
-        except psycopg2.DatabaseError as error:
-            print(error)
-        finally:
-            if conn is not None:
-                conn.close()
+    def import_ais_data(self):
+        print("Importing ais data..")
+        for entry in os.scandir("./import"):
+            if not entry.is_dir() and ".csv" in entry.name:
+                num_lines = sum(1 for line in open(entry.path))
+                print(f"Importing {entry.name} ({num_lines} lines)")
+                self.import_csv_file(entry.path)
+                print(f"Done importing {entry.name}")
+
+    def apply(self, obj):
+        obj.replace(np.nan, None)
+
+        new_dfg = pd.DataFrame()
+        new_dfg['timestamp'] = pd.to_datetime(obj['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
+        new_dfg['mobile_type'] = obj["Type of mobile"].astype(str).apply(self.apply_string_format)
+        new_dfg['mmsi'] = obj["MMSI"].astype(int)
+        new_dfg['latitude'] = obj["Latitude"].astype(float)
+        new_dfg['longitude'] = obj["Longitude"].astype(float)
+        new_dfg['nav_stat'] = obj["Navigational status"].astype(str).apply(self.apply_string_format)
+        new_dfg['rot'] = obj["ROT"].astype(float)
+        new_dfg['sog'] = obj["SOG"].astype(float)
+        new_dfg['cog'] = obj["COG"].astype(float)
+        new_dfg['heading'] = obj["Heading"].astype(float)
+        new_dfg['imo'] = obj["IMO"].astype(str).apply(self.apply_string_format)
+        new_dfg['callsign'] = obj["Callsign"].astype(str).apply(self.apply_string_format)
+        new_dfg['name'] = obj["Name"].astype(str).apply(self.apply_string_format)
+        new_dfg['ship_type'] = obj['Ship type'].astype(str).apply(self.apply_string_format)
+        new_dfg['cargo_type'] = obj["Cargo type"].astype(str).apply(self.apply_string_format)
+        new_dfg['width'] = obj['Width'].astype(float)
+        new_dfg['length'] = obj['Length'].astype(float)
+        new_dfg['position_fixing_device_type'] = obj['Type of position fixing device'].astype(str).apply(self.apply_string_format)
+        new_dfg['draught'] = obj["Draught"].astype(float)
+        new_dfg['destination'] = obj["Destination"].astype(str).apply(self.apply_string_format)
+        new_dfg['eta'] = obj["ETA"].astype(str).apply(self.apply_datetime_if_not_none)
+        new_dfg['data_src_type'] = obj["Data source type"].astype(str).apply(self.apply_string_format)
+        new_dfg['a'] = obj["A"].astype(float)
+        new_dfg['b'] = obj["B"].astype(float)
+        new_dfg['d'] = obj["D"].astype(float)
+        new_dfg['c'] = obj["C"].astype(float)
+
+        new_dfg.where(new_dfg.notnull(), None)
+
+        return new_dfg
+
+    @staticmethod
+    def apply_string_format(str_input: str):
+        if str_input == "nan":
+            return None
+        str_input = str_input.replace("\\","\\\\")
+        str_input = str_input.replace(",","\,")
+        return str_input
+
+    @staticmethod
+    def apply_datetime_if_not_none(input):
+        if input == "nan":
+            return None
+        return datetime.strptime(input, "%d/%m/%Y %H:%M:%S") if input else None
+
+    def import_csv_file(self, csv_fname):
+        print(csv_fname)
+
+        cfg_uri_psql = 'postgresql+psycopg2://postgres:password@db/ais'
+
+        d6tstack.combine_csv.CombinerCSV([csv_fname], apply_after_read=self.apply, add_filename=False).to_psql_combine(
+        cfg_uri_psql, 'public.data', if_exists='append')
 
     @staticmethod
     def __build_dict(cursor, row):
@@ -63,95 +99,3 @@ class AisDataService:
             x[col[0]] = row[key]
         return x
 
-    def import_file(self, path):
-
-        conn = None
-        try:
-            conn = psycopg2.connect(self.dsn)
-            cur = conn.cursor()
-
-            with open(path) as csv_file:
-                csv_reader = csv.reader(csv_file, delimiter=',')
-                line_count = 0
-                columns = []
-                for row in csv_reader:
-                    if line_count == 0:
-                        columns = row
-                        line_count += 1
-                    else:
-                        line_count += 1
-                        obj = self.create_dict_from_row(columns, row)
-                        obj = self.map_dict_to_ais_data_entry(obj)
-                        obj = AisDataEntry.from_dict(obj)
-                        self.add_inserts_to_transaction(cur, [obj])
-
-            conn.commit()
-            # close the database communication
-            cur.close()
-        except psycopg2.DatabaseError as error:
-            print(error)
-        finally:
-            if conn is not None:
-                conn.close()
-
-    @staticmethod
-    def add_inserts_to_transaction(cur, objects):
-        for ade in objects:
-            cur.execute(
-                """INSERT INTO ais.data (
-                timestamp, mobile_type, mmsi, latitude, longitude, nav_stat, rot, sog, cog, heading, imo, callsign,
-                name, ship_type, cargo_type, width, length, position_fixing_device_type, draught, eta,
-                data_src_type, destination, a, b, c, d) VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (ade.timestamp.isoformat(), ade.mobile_type, ade.mmsi, ade.latitude, ade.longitude, ade.nav_stat,
-                 ade.rot, ade.sog, ade.cog, ade.heading, ade.imo, ade.callsign, ade.name, ade.ship_type,
-                 ade.cargo_type, ade.width, ade.length, ade.position_fixing_device_type, ade.draught,
-                 ade.eta.isoformat() if ade.eta else None,
-                 ade.data_src_type, ade.destination, ade.a, ade.b, ade.c, ade.d)
-            )
-
-    @staticmethod
-    def create_dict_from_row(columns, row):
-        obj = {}
-        for index, column in enumerate(columns):
-            obj[column] = row[index]
-        return obj
-
-    @staticmethod
-    def map_dict_to_ais_data_entry(obj):
-        mapping_dictionary = {
-            "# Timestamp": "timestamp",
-            "Type of mobile": "mobile_type",
-            "MMSI": "mmsi",
-            "Latitude": "latitude",
-            "Longitude": "longitude",
-            "Navigational status": "nav_stat",
-            "ROT": "rot",
-            "SOG": "sog",
-            "COG": "cog",
-            "Heading": "heading",
-            "IMO": "imo",
-            "Callsign": "callsign",
-            "Name": "name",
-            "Ship type": "ship_type",
-            "Cargo type": "cargo_type",
-            "Width": "width",
-            "Length": "length",
-            "Type of position fixing device": "position_fixing_device_type",
-            "Draught": "draught",
-            "Destination": "destination",
-            "ETA": "eta",
-            "Data source type": "data_src_type",
-            "A": "a",
-            "B": "b",
-            "C": "c",
-            "D": "d"
-        }
-        new_obj = {}
-        for key in obj:
-            new_key = mapping_dictionary[key]
-            new_obj[new_key] = obj[key]
-
-        return new_obj

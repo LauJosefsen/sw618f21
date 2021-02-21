@@ -10,5 +10,4 @@ done
   
 >&2 echo "Postgres is up - executing commands"
 
-python importer.py
 flask run

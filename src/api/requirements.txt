@@ -3,3 +3,5 @@ redis
 pytest
 psycopg2
 dependency-injector
+pandas
+d6tstack
