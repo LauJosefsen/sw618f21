@@ -1,12 +1,12 @@
 import base64
 import datetime
 import io
-import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import plotly.express as px
 import pandas as pd
+from dash import dash
 from dash.dependencies import Input, Output, State
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -30,8 +30,8 @@ app.layout = html.Div([
     html.H3("Graph Testing"),
     dcc.Dropdown(id="graph_input",
                  options=[
-                     {"label": "ship data for 09/02/2021 01:16:47", "value": "timestamp"},
-                     {"label": "ship data for one ship", "value": "one_ship"},
+                     {"label": "Ship data for 09/02/2021 01:16:47", "value": "timestamp"},
+                     {"label": "Ship data for one ship", "value": "one_ship"},
                      ],
                  multi=False,
                  value="timestamp",
@@ -45,18 +45,58 @@ app.layout = html.Div([
     html.H3("Pie Chart Testing"),
     dcc.Dropdown(id="piechart_input",
                  options=[
-                     {"label": "ship types", "value": "ShipType"},
-                     {"label": "cargo types", "value": "CargoType"},
-                    {"label": "class types", "value": "Class"},
+                     {"label": "Ship types", "value": "ShipType"},
+                     {"label": "Cargo types", "value": "CargoType"},
+                    {"label": "Class types", "value": "Class"},
                      ],
                  multi=False,
                  value="ShipType",
-                 style={'width': "40%"}
+                 style={'width': "40%"},
+                 searchable=False
                  ),
 
     html.Div(id='output-chart'),
     html.Br(),
     dcc.Graph(id='ais_ship_types', figure={}),
+
+    # Histogram
+    html.H3("Histogram Testing"),
+    dcc.Dropdown(id="histogram_input",
+                 options=[
+                     {"label": "Cargo Type", "value": "CargoType"},
+                     {"label": "COG", "value": "COG"},
+                     {"label": "Class", "value": "Class"},
+                     {"label": "Data Source Type", "value": "DataSourceType"},
+                     {"label": "Date", "value": "Date"},
+                     {"label": "Destination", "value": "Destination"},
+                     {"label": "Draught", "value": "Draught"},
+                     {"label": "ETA", "value": "ETA"},
+                     {"label": "IMO", "value": "IMO"},
+                     {"label": "Length", "value": "Length"},
+                     {"label": "NavStatus", "value": "NavStatus"},
+                     {"label": "ROT", "value": "ROT"},
+                     {"label": "SOG", "value": "SOG"},
+                     {"label": "Ship types", "value": "ShipType"},
+                     {"label": "Width", "value": "Width"},
+                     ],
+                 multi=False,
+                 value="ShipType",
+                 style={'width': "40%"},
+                 clearable=False
+                 ),
+    dcc.Graph(id="histogram", figure={}),
+
+    # sliders for histogram
+    dcc.RangeSlider(
+        id='histogram_slider',
+        marks={i: '{}'.format(i) for i in {1, 25, 50, 75, 100, 150, 200,
+                                           250, 300, 350, 400, 450, 500}},
+        min=0,
+        max=500,
+        step=1,
+        value=[1, 25]
+    ),
+
 
     # Upload data
     dcc.Upload(
@@ -155,6 +195,15 @@ def show_piechart(piechart_input):
     updated_ais_data = ais_df # saving it again in case we messing with it
     piechart = px.pie(updated_ais_data, names=piechart_input, title='Ship types')
     return piechart
+
+@app.callback(Output('histogram', 'figure'), [Input('histogram_input', 'value'),
+                                              Input('histogram_slider', 'value')])
+def show_histogram(histogram_input, histogram_slider):
+    # Showing type of histogram based on input
+    histogram_data = ais_df[histogram_input] # saving it again in case we messing with it
+    histogram = px.histogram(histogram_data, nbins=30, range_x=[histogram_slider[0],
+                                                                histogram_slider[1]])
+    return histogram
 
 
 if __name__ == '__main__':
