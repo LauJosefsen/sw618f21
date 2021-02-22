@@ -1,13 +1,13 @@
 import base64
 import datetime
-import io
+from dash import dash
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+import io
 import plotly.express as px
 import pandas as pd
-from dash import dash
-from dash.dependencies import Input, Output, State
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
