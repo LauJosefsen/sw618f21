@@ -16,7 +16,9 @@ df = px.data.tips()
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # Giving positional col. names
-colnames = ['Date', 'Class', 'MMSI', 'lat', 'lon', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign', 'Name', 'ShipType', 'CargoType', 'Width', 'Length', 'TypeOfPosFixingDevice', 'Draught', 'Destination', 'ETA', 'DataSourceType', 'SizeA', 'SizeB', 'SizeC', 'SizeD'] # giving our AIS data some col. names
+colnames = ['Date', 'Class', 'MMSI', 'lat', 'lon', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign',
+            'Name', 'ShipType', 'CargoType', 'Width', 'Length', 'TypeOfPosFixingDevice', 'Draught', 'Destination',
+            'ETA', 'DataSourceType', 'SizeA', 'SizeB', 'SizeC', 'SizeD']  # giving our AIS data some col. names
 
 # Loading data in a Pandas data frame using data using read_csv and passing in col. names
 ais_df = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
@@ -32,7 +34,7 @@ app.layout = html.Div([
                  options=[
                      {"label": "Ship data for 09/02/2021 01:16:47", "value": "timestamp"},
                      {"label": "Ship data for one ship", "value": "one_ship"},
-                     ],
+                 ],
                  multi=False,
                  value="timestamp",
                  style={'width': "40%"}
@@ -47,8 +49,8 @@ app.layout = html.Div([
                  options=[
                      {"label": "Ship types", "value": "ShipType"},
                      {"label": "Cargo types", "value": "CargoType"},
-                    {"label": "Class types", "value": "Class"},
-                     ],
+                     {"label": "Class types", "value": "Class"},
+                 ],
                  multi=False,
                  value="ShipType",
                  style={'width': "40%"},
@@ -78,7 +80,7 @@ app.layout = html.Div([
                      {"label": "SOG", "value": "SOG"},
                      {"label": "Ship types", "value": "ShipType"},
                      {"label": "Width", "value": "Width"},
-                     ],
+                 ],
                  multi=False,
                  value="ShipType",
                  style={'width': "40%"},
@@ -96,7 +98,6 @@ app.layout = html.Div([
         step=1,
         value=[1, 25]
     ),
-
 
     # Upload data
     dcc.Upload(
@@ -120,6 +121,7 @@ app.layout = html.Div([
     ),
     html.Div(id='output-data-upload'),
 ])
+
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
@@ -158,6 +160,7 @@ def parse_contents(contents, filename, date):
         })
     ])
 
+
 # Callback method for uploading
 @app.callback(Output('output-data-upload', 'children'),
               Input('upload-data', 'contents'),
@@ -170,37 +173,44 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
 
+
 @app.callback(Output('my_ais_data', 'figure'), Input('graph_input', 'value'))
 def show_graph(graph_input):
     print(graph_input)
 
     # Showing type of graph based on input
-    if(graph_input == "timestamp"):
+    if (graph_input == "timestamp"):
         updated_ais_data = ais_df.loc[ais_df['Date'] == "09/02/2021 01:16:47"]
-    elif(graph_input == "one_ship"):
+    elif (graph_input == "one_ship"):
         updated_ais_data = ais_df.loc[ais_df['Name'] == "NKT VICTORIA"]
     else:
         updated_ais_data = ais_df
 
-    fig = px.scatter_mapbox(updated_ais_data, lat="lat", lon="lon", hover_name="Name", hover_data=['Date', 'Class', 'MMSI', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO', 'Callsign', 'Name', 'ShipType'],
+    fig = px.scatter_mapbox(updated_ais_data, lat="lat", lon="lon", hover_name="Name",
+                            hover_data=['Date', 'Class', 'MMSI', 'NavStatus', 'ROT', 'SOG', 'COG', 'Heading', 'IMO',
+                                        'Callsign', 'Name', 'ShipType'],
                             color_discrete_sequence=["red"], zoom=3, height=300)
     fig.update_layout(mapbox_style="open-street-map")
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     return fig
 
+
 # Testing with piechart for now
-@app.callback(Output('ais_ship_types', 'figure'), Input('piechart_input', 'value'))
+@app.callback(Output('ais_ship_types', 'figure'),
+              Input('piechart_input', 'value'))
 def show_piechart(piechart_input):
     # Showing type of piechart based on input
-    updated_ais_data = ais_df # saving it again in case we messing with it
+    updated_ais_data = ais_df  # saving it again in case we messing with it
     piechart = px.pie(updated_ais_data, names=piechart_input, title='Ship types')
     return piechart
 
-@app.callback(Output('histogram', 'figure'), [Input('histogram_input', 'value'),
-                                              Input('histogram_slider', 'value')])
+
+@app.callback(Output('histogram', 'figure'),
+              [Input('histogram_input', 'value'),
+               Input('histogram_slider', 'value')])
 def show_histogram(histogram_input, histogram_slider):
     # Showing type of histogram based on input
-    histogram_data = ais_df[histogram_input] # saving it again in case we messing with it
+    histogram_data = ais_df[histogram_input]  # saving it again in case we messing with it
     histogram = px.histogram(histogram_data, nbins=30, range_x=[histogram_slider[0],
                                                                 histogram_slider[1]])
     return histogram
