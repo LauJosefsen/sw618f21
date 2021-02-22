@@ -1,5 +1,7 @@
 flask
 redis
 pytest
-psycopg2
+psycopg2-binary
 dependency-injector
+pandas
+d6tstack

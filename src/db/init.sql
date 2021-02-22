@@ -1,11 +1,9 @@
 CREATE DATABASE ais;
 
 
-\c ais;
+\c ais
 
-CREATE SCHEMA ais;
-
-CREATE TABLE ais.data
+CREATE TABLE public.data
 (
 	timestamp timestamp not null,
 	mobile_type varchar(50),
@@ -26,13 +24,13 @@ CREATE TABLE ais.data
 	length double precision,
 	position_fixing_device_type varchar(50),
 	draught double precision,
+	destination varchar(100),
 	eta timestamp,
 	data_src_type varchar(20),
-	destination varchar(100),
 	a double precision,
 	b double precision,
 	c double precision,
-	d double precision,
-	constraint data_pk
-		primary key (timestamp, MMSI)
+	d double precision
 );
+
+COMMIT;

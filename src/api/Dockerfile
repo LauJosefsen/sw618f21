@@ -1,9 +1,14 @@
-FROM python:3.9-alpine
+FROM python:3.9-slim
 WORKDIR /api
 ENV FLASK_APP=./app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-RUN apk add --no-cache gcc=10.2.1_pre1-r3 musl-dev=1.2.2-r0 linux-headers=5.7.8-r0 postgresql-libs=13.1-r2 postgresql-dev=13.1-r2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  gcc=4:8.3.0-1 \
+  musl-dev=1.1.21-2 \
+  libpq-dev=11.10-0+deb10u1 \
+  postgresql-client=11+200+deb10u4 \
+  && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
-CMD ["flask", "run"]
+CMD ["sh", "./start.sh"]
