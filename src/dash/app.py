@@ -23,17 +23,17 @@ colnames = [
     "MMSI",
     "lat",
     "lon",
-   "NavStatus",
+    "NavStatus",
     "ROT",
     "SOG",
     "COG",
-   "Heading",
+    "Heading",
     "IMO",
     "Callsign",
     "Name",
     "ShipType",
     "CargoType",
-   "Width",
+    "Width",
     "Length",
     "TypeOfPosFixingDevice",
     "Draught",
@@ -62,7 +62,7 @@ app.layout = html.Div(
         dcc.Dropdown(
             id="graph_input",
             options=[
-               {"label": "Ship data for 09/02/2021 01:16:47", "value": "timestamp"},
+                {"label": "Ship data for 09/02/2021 01:16:47", "value": "timestamp"},
                 {"label": "Ship data for one ship", "value": "one_ship"},
             ],
             multi=False,
@@ -166,19 +166,19 @@ def parse_contents(contents, filename, date):
         return html.Div(["There was an error processing this file."])
 
     return html.Div(
-                [
-                    html.H5(filename),
-                    html.H6(datetime.datetime.fromtimestamp(date)),
-                    dash_table.DataTable(
-                    data=df.to_dict("records"),
-                    columns = [{"name": i, "id": i} for i in df.columns],
-                ),
-                html.Hr(),  # horizontal line
-                # For debugging, display the raw contents provided by the web browser
-                html.Div("Raw Content"),
-                html.Pre(
-                contents[0:200] + "...",
-                style = {"whiteSpace": "pre-wrap", "wordBreak": "break-all"},
+        [
+            html.H5(filename),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            dash_table.DataTable(
+                data=df.to_dict("records"),
+                columns = [{"name": i, "id": i} for i in df.columns],
+            ),
+            html.Hr(),  # horizontal line
+            # For debugging, display the raw contents provided by the web browser
+            html.Div("Raw Content"),
+            html.Pre(
+            contents[0:200] + "...",
+            style = {"whiteSpace": "pre-wrap", "wordBreak": "break-all"},
             ),
         ]
     )
@@ -214,10 +214,10 @@ def show_graph(graph_input):
 
     fig = px.scatter_mapbox(
         updated_ais_data,
-        lat = "lat",
-        lon = "lon",
-        hover_name = "Name",
-        hover_data = [
+        lat="lat",
+        lon="lon",
+        hover_name="Name",
+        hover_data=[
             "Date",
             "Class",
             "MMSI",
@@ -231,9 +231,9 @@ def show_graph(graph_input):
             "Name",
             "ShipType",
         ],
-        color_discrete_sequence = ["red"],
-        zoom = 3,
-        height = 300,
+        color_discrete_sequence=["red"],
+        zoom=3,
+        height=300,
         )
     fig.update_layout(mapbox_style="open-street-map")
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
