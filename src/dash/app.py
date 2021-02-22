@@ -171,14 +171,14 @@ def parse_contents(contents, filename, date):
             html.H6(datetime.datetime.fromtimestamp(date)),
             dash_table.DataTable(
                 data=df.to_dict("records"),
-                columns = [{"name": i, "id": i} for i in df.columns],
+                columns=[{"name": i, "id": i} for i in df.columns],
             ),
             html.Hr(),  # horizontal line
             # For debugging, display the raw contents provided by the web browser
             html.Div("Raw Content"),
             html.Pre(
-            contents[0:200] + "...",
-            style = {"whiteSpace": "pre-wrap", "wordBreak": "break-all"},
+                contents[0:200] + "...",
+                style={"whiteSpace": "pre-wrap", "wordBreak": "break-all"},
             ),
         ]
     )
@@ -234,7 +234,7 @@ def show_graph(graph_input):
         color_discrete_sequence=["red"],
         zoom=3,
         height=300,
-        )
+    )
     fig.update_layout(mapbox_style="open-street-map")
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     return fig
