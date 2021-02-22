@@ -6,4 +6,4 @@ RUN apt-get update; apt-get install -y --no-install-recommends gcc=4:10.2.0-1ubu
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
-CMD ['sh ','./start.sh']
+CMD ['sh','./start.sh']
