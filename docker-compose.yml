@@ -17,13 +17,9 @@ services:
     build: ./src/db
     ports:
       - "5432:5432"
-  visual:
-    container_name: visual
-    build: ./src/visual
-    ports:
-      - "3000:3000"
   dash:
     container_name: dash
     build: ./src/dash
     ports:
       - "4000:4000"
+    volumes: ['./src/dash:/dash']
