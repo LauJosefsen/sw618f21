@@ -23,3 +23,15 @@ services:
     ports:
       - "4000:4000"
     volumes: ['./src/dash:/dash']
+  pgadmin:
+    container_name: pg_admin
+    build: ./src/pgadmin
+    ports:
+    - "8080:80"
+    volumes:
+    - pgadmin-data:/var/lib/pgadmin
+    links:
+    - "db:pgsql-server"
+volumes:
+  db-data:
+  pgadmin-data:

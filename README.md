@@ -27,3 +27,5 @@ PostgreSQL: `postgres@localhost:5432 -p password`
 API: `localhost:5000`
 
 Dash: `localhost:4000` in browser
+
+PGAdmin: `localhost:8080` in browser

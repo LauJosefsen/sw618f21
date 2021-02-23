@@ -1,0 +1,7 @@
+FROM dpage/pgadmin4:4.30
+COPY --chown=pgadmin pgadmin4.db /var/lib/pgadmin/pgadmin4.db
+ENV PGADMIN_LISTEN_PORT=80
+ENV PGADMIN_CONFIG_SERVER_MODE="False"
+ENV PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED="False"
+ENV PGADMIN_DEFAULT_EMAIL=postgres@postgres.dk
+ENV PGADMIN_DEFAULT_PASSWORD=password
