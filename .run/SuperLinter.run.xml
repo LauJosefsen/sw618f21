@@ -1,0 +1,26 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SuperLinter" type="docker-deploy" factoryName="docker-image" server-name="Docker">
+    <deployment type="docker-image">
+      <settings>
+        <option name="imageTag" value="github/super-linter" />
+        <option name="command" value="" />
+        <option name="containerName" value="super-linter" />
+        <option name="entrypoint" value="" />
+        <option name="envVars">
+          <list>
+            <DockerEnvVarImpl>
+              <option name="name" value="RUN_LOCAL" />
+              <option name="value" value="TRUE" />
+            </DockerEnvVarImpl>
+            <DockerEnvVarImpl>
+              <option name="name" value="VALIDATE_SQL" />
+              <option name="value" value="FALSE" />
+            </DockerEnvVarImpl>
+          </list>
+        </option>
+        <option name="commandLineOptions" value="-v $PROJECT_DIR$:/tmp/lint" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>
