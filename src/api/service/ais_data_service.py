@@ -5,23 +5,20 @@ import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
+from flask import jsonify
+from geomet import wkt
 
 
 class AisDataService:
     dsn = "dbname=ais user=postgres password=password host=db"
 
     def __init__(self):
-        self.connection = psycopg2.connect(
-            user="postgres",
-            password="password",
-            host="db",
-            port="5432",
-            database="ais",
-        )
+        pass
+
 
     def fetch_limit(self, limit, offset=0):
-        # Does not really fetch all. lol
-        cursor = self.connection.cursor()
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
         query = "SELECT * FROM public.data LIMIT %s OFFSET %s;"
 
         cursor.execute(query, (limit, offset))
@@ -120,3 +117,22 @@ class AisDataService:
         for key, col in enumerate(cursor.description):
             x[col[0]] = row[key]
         return x
+
+    def get_routes(self, limit, offset):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """
+            SELECT c.mmsi, MIN(p.timestamp) as begin, MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring 
+            FROM public.ais_course AS c JOIN 
+            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id 
+            GROUP BY c.id LIMIT %s OFFSET %s;"""
+
+        cursor.execute(query, (limit, offset))
+
+        data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        for row in data:
+            row['coordinates'] =  wkt.loads(row['linestring'])['coordinates']
+            row.pop('linestring')
+
+        return jsonify(data)

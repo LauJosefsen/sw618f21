@@ -1,7 +1,7 @@
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from service.ais_data_service import AisDataService
-
+from flask import request
 
 @inject
 def index(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
@@ -14,3 +14,12 @@ def import_ais_data(
 ):
     ais_data_service.import_ais_data()
     return ""
+
+
+@inject
+def get_routes(
+        ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    limit = request.args.get('limit', default=1, type=int)
+    offset = request.args.get('offset', default=0, type=int)
+    return ais_data_service.get_routes(limit,offset)
