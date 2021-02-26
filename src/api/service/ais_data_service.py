@@ -15,7 +15,6 @@ class AisDataService:
     def __init__(self):
         pass
 
-
     def fetch_limit(self, limit, offset=0):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
@@ -122,9 +121,11 @@ class AisDataService:
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         query = """
-            SELECT c.mmsi, MIN(p.timestamp) as begin, MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring 
-            FROM public.ais_course AS c JOIN 
-            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id 
+            SELECT
+            c.mmsi, MIN(p.timestamp) as begin,
+            MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
+            FROM public.ais_course AS c JOIN
+            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id
             GROUP BY c.id LIMIT %s OFFSET %s;"""
 
         cursor.execute(query, (limit, offset))
@@ -132,7 +133,7 @@ class AisDataService:
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         for row in data:
-            row['coordinates'] =  wkt.loads(row['linestring'])['coordinates']
-            row.pop('linestring')
+            row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
+            row.pop("linestring")
 
         return jsonify(data)
