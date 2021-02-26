@@ -5,7 +5,6 @@ import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
-from flask import jsonify
 from geomet import wkt
 
 
@@ -136,4 +135,4 @@ class AisDataService:
             row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
             row.pop("linestring")
 
-        return jsonify(data)
+        return data

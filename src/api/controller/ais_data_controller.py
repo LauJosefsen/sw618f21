@@ -2,11 +2,12 @@ from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
 from service.ais_data_service import AisDataService
+from flask import jsonify
 
 
 @inject
 def index(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
-    return {"data": ais_data_service.fetch_limit(20, 0)}
+    return jsonify(ais_data_service.fetch_limit(20, 0))
 
 
 @inject
@@ -23,4 +24,4 @@ def get_routes(
 ):
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
-    return ais_data_service.get_routes(limit, offset)
+    return jsonify(ais_data_service.get_routes(limit, offset))
