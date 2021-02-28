@@ -1,12 +1,12 @@
-import base64
-import datetime
-import io
+import json
 
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+import numpy as np
 import pandas as pd
 import plotly.express as px
+import requests
 from dash import dash
 from dash.dependencies import Input, Output, State
 
@@ -16,7 +16,7 @@ df = px.data.tips()
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-# Giving positional col. names
+# Giving col. names
 colnames = [
     "Date",
     "Class",
@@ -44,7 +44,7 @@ colnames = [
     "SizeB",
     "SizeC",
     "SizeD",
-]  # giving our AIS data some col. names
+]
 
 # Loading data in a Pandas data frame using data using read_csv and passing in col. names
 ais_df = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
@@ -53,12 +53,26 @@ ais_df = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
 app.layout = html.Div(
     [
         html.H2("P6 AIS Data", style={"text-align": "center"}),
-        html.H3(
-            "Using first 10k rows of dataset aisdk_20210209",
-            style={"text-align": "center"},
-        ),
+
+        html.Div([
+            # Get data from API
+            html.Button('Get data', id='get_data_btn'),
+            html.Div(id="output_data_api"),
+
+            # Input to decide how much input to load
+            html.P('Limit'),
+            dcc.Input(id="input_limit", type="number", value=100, placeholder="", debounce=True),
+            html.P('Offset'),
+            dcc.Input(id="input_offset", type="number", value=10, placeholder="", debounce=True),
+        ]),
+
+        # Display data from API in graph
+        html.Div(id="output-line-graph"),
+        html.Br(),
+        dcc.Graph(id="line_graph", figure={}),
+
         # Graph
-        html.H3("Graph Testing"),
+        html.H3("Local data testing below"),
         dcc.Dropdown(
             id="graph_input",
             options=[
@@ -72,6 +86,7 @@ app.layout = html.Div(
         html.Div(id="output-graph"),
         html.Br(),
         dcc.Graph(id="my_ais_data", figure={}),
+
         # Pie Chart
         html.H3("Pie Chart Testing"),
         dcc.Dropdown(
@@ -89,6 +104,7 @@ app.layout = html.Div(
         html.Div(id="output-chart"),
         html.Br(),
         dcc.Graph(id="ais_ship_types", figure={}),
+
         # Histogram
         html.H3("Histogram Testing"),
         dcc.Dropdown(
@@ -128,77 +144,8 @@ app.layout = html.Div(
             step=1,
             value=[1, 25],
         ),
-        # Upload data
-        dcc.Upload(
-            id="upload-data",
-            children=html.Div(["Drag and Drop or ", html.A("Select Files")]),
-            style={
-                "width": "100%",
-                "height": "60px",
-                "lineHeight": "60px",
-                "borderWidth": "1px",
-                "borderStyle": "dashed",
-                "borderRadius": "5px",
-                "textAlign": "center",
-                "margin": "10px",
-            },
-            # Allow multiple files to be uploaded
-            multiple=True,
-        ),
-        html.Div(id="output-data-upload"),
     ]
 )
-
-
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(",")
-
-    decoded = base64.b64decode(content_string)
-    try:
-        if "csv" in filename:
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-        elif "xls" in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-    except Exception as e:
-        print(e)
-        return html.Div(["There was an error processing this file."])
-
-    return html.Div(
-        [
-            html.H5(filename),
-            html.H6(datetime.datetime.fromtimestamp(date)),
-            dash_table.DataTable(
-                data=df.to_dict("records"),
-                columns=[{"name": i, "id": i} for i in df.columns],
-            ),
-            html.Hr(),  # horizontal line
-            # For debugging, display the raw contents provided by the web browser
-            html.Div("Raw Content"),
-            html.Pre(
-                contents[0:200] + "...",
-                style={"whiteSpace": "pre-wrap", "wordBreak": "break-all"},
-            ),
-        ]
-    )
-
-
-# Callback method for uploading
-@app.callback(
-    Output("output-data-upload", "children"),
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
-    State("upload-data", "last_modified"),
-)
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [
-            parse_contents(c, n, d)
-            for c, n, d in zip(list_of_contents, list_of_names, list_of_dates)
-        ]
-        return children
-
 
 @app.callback(Output("my_ais_data", "figure"), Input("graph_input", "value"))
 def show_graph(graph_input):
@@ -233,14 +180,14 @@ def show_graph(graph_input):
         ],
         color_discrete_sequence=["red"],
         zoom=3,
-        height=300,
+        height=600,
     )
     fig.update_layout(mapbox_style="open-street-map")
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     return fig
 
 
-# Testing with piechart for now
+# Piechart callback
 @app.callback(Output("ais_ship_types", "figure"), Input("piechart_input", "value"))
 def show_piechart(piechart_input):
     # Showing type of piechart based on input
@@ -263,6 +210,52 @@ def show_histogram(histogram_input, histogram_slider):
     )
     return histogram
 
+
+# Callback for retrieving data from the button
+@app.callback(
+    Output("line_graph", "figure"),
+    [Input('get_data_btn', 'n_clicks'),
+     Input('input_limit', 'value'),
+     Input('input_offset', 'value')],
+)
+def get_data(n_clicks, input_limit, input_offset):
+    api_json = get_json_api(input_limit, input_offset)
+
+    lats = []
+    lons = []
+    names = []
+
+    for course in api_json:
+        mmsi = course['mmsi']
+        for coord in course['coordinates']:
+            lats = np.append(lats, coord[1])
+            lons = np.append(lons, coord[0])
+            names = np.append(names, mmsi)
+        lats = np.append(lats, None)
+        lons = np.append(lons, None)
+        names = np.append(names, None)
+
+    # print(lats)
+    # print(lons)
+    # print(names)
+
+    fig = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
+                         mapbox_style="stamen-terrain", zoom=6)
+    return fig
+
+
+
+def get_json_api(limit, offset=0):
+    payload = {'limit': limit, 'offset':offset}
+    response = requests.get(f'http://api:5000/routes', params=payload)
+    content = response.content
+    y = json.loads(content)
+
+    #print(json.dumps(y))
+    for course in y:
+        print(course['mmsi'])
+
+    return y
 
 if __name__ == "__main__":
     app.run_server(host="0.0.0.0", port=4000, debug=True)
