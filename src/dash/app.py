@@ -2,13 +2,12 @@ import json
 
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import requests
 from dash import dash
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
@@ -147,7 +146,11 @@ app.layout = html.Div(
     ]
 )
 
-@app.callback(Output("my_ais_data", "figure"), Input("graph_input", "value"))
+
+@app.callback(
+    Output("my_ais_data", "figure"),
+    Input("graph_input", "value")
+)
 def show_graph(graph_input):
     # Showing type of graph based on input
     if graph_input == "timestamp":
@@ -237,13 +240,15 @@ def get_data(n_clicks, input_limit, input_offset):
                          mapbox_style="stamen-terrain", zoom=6)
     return fig
 
+
 def get_json_api(limit, offset=0):
-    payload = {'limit': limit, 'offset':offset}
+    payload = {'limit': limit, 'offset': offset}
     response = requests.get(f'http://api:5000/routes', params=payload)
     content = response.content
     y = json.loads(content)
 
     return y
+
 
 if __name__ == "__main__":
     app.run_server(host="0.0.0.0", port=4000, debug=True)
