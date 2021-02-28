@@ -149,8 +149,6 @@ app.layout = html.Div(
 
 @app.callback(Output("my_ais_data", "figure"), Input("graph_input", "value"))
 def show_graph(graph_input):
-    print(graph_input)
-
     # Showing type of graph based on input
     if graph_input == "timestamp":
         updated_ais_data = ais_df.loc[ais_df["Date"] == "09/02/2021 01:16:47"]
@@ -235,25 +233,15 @@ def get_data(n_clicks, input_limit, input_offset):
         lons = np.append(lons, None)
         names = np.append(names, None)
 
-    # print(lats)
-    # print(lons)
-    # print(names)
-
     fig = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
                          mapbox_style="stamen-terrain", zoom=6)
     return fig
-
-
 
 def get_json_api(limit, offset=0):
     payload = {'limit': limit, 'offset':offset}
     response = requests.get(f'http://api:5000/routes', params=payload)
     content = response.content
     y = json.loads(content)
-
-    #print(json.dumps(y))
-    for course in y:
-        print(course['mmsi'])
 
     return y
 
