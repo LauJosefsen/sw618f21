@@ -237,13 +237,13 @@ def get_data(n_clicks, input_limit, input_offset):
         names = np.append(names, None)
 
     fig = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
-                         mapbox_style="stamen-terrain", zoom=6)
+                         mapbox_style="stamen-terrain", zoom=6, height=1000)
     return fig
 
 
 def get_json_api(limit, offset=0):
     payload = {'limit': limit, 'offset': offset}
-    response = requests.get(f'http://api:5000/routes', params=payload)
+    response = requests.get('http://api:5000/routes', params=payload)
     content = response.content
     y = json.loads(content)
 
