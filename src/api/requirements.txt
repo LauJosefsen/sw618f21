@@ -5,3 +5,5 @@ psycopg2-binary
 dependency-injector
 pandas
 d6tstack
+geomet
+geopy

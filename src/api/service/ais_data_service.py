@@ -5,23 +5,22 @@ import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
+from geomet import wkt
+
+from data_management.course_cluster import cluster_ais_points_courses
+from data_management.clean_points import is_point_valid
+from model.ais_data_entry import AisDataEntry
 
 
 class AisDataService:
     dsn = "dbname=ais user=postgres password=password host=db"
 
     def __init__(self):
-        self.connection = psycopg2.connect(
-            user="postgres",
-            password="password",
-            host="db",
-            port="5432",
-            database="ais",
-        )
+        pass
 
     def fetch_limit(self, limit, offset=0):
-        # Does not really fetch all. lol
-        cursor = self.connection.cursor()
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
         query = "SELECT * FROM public.data LIMIT %s OFFSET %s;"
 
         cursor.execute(query, (limit, offset))
@@ -120,3 +119,76 @@ class AisDataService:
         for key, col in enumerate(cursor.description):
             x[col[0]] = row[key]
         return x
+
+    def get_routes(self, limit, offset):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """
+            SELECT
+            c.mmsi, MIN(p.timestamp) as begin,
+            MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
+            FROM public.ais_course AS c JOIN
+            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id
+            GROUP BY c.id LIMIT %s OFFSET %s;"""
+
+        cursor.execute(query, (limit, offset))
+
+        data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        for row in data:
+            row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
+            row.pop("linestring")
+
+        return data
+
+    def cluster_points(self):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        cursor.execute("START TRANSACTION;")
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
+        cursor.execute(query)
+        mmsi_list = cursor.fetchall()
+
+        for mmsi in mmsi_list:
+            mmsi = mmsi[0]
+            query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
+            cursor.execute(query, tuple([str(mmsi)]))
+            mmsi_points = [
+                AisDataEntry(**AisDataService.__build_dict(cursor, row))
+                for row in cursor.fetchall()
+            ]
+
+            mmsi_points = [point for point in mmsi_points if is_point_valid(point)]
+
+            mmsi_points = cluster_ais_points_courses(mmsi_points)
+
+            # insert course
+            query = """
+                INSERT INTO public.ais_course (mmsi) VALUES (%s);
+                SELECT currval(pg_get_serial_sequence('public.ais_course','id'));
+            """
+            cursor.execute(query, tuple([str(mmsi)]))
+            inserted_id = cursor.fetchall()[0][0]
+
+            # insert points
+            for point in mmsi_points:
+                query = """
+                    INSERT INTO public.ais_points
+                    (mmsi, timestamp, location, rot, sog, cog, heading, ais_course_id)
+                     VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s, %s)"""
+                cursor.execute(
+                    query,
+                    (
+                        point.mmsi,
+                        point.timestamp,
+                        point.longitude,
+                        point.latitude,
+                        point.rot,
+                        point.sog,
+                        point.cog,
+                        point.heading,
+                        inserted_id,
+                    ),
+                )
+
+        cursor.execute("COMMIT;")
