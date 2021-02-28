@@ -52,24 +52,34 @@ ais_df = pd.read_csv("10k_aisdk_20210209.csv", header=None, names=colnames)
 app.layout = html.Div(
     [
         html.H2("P6 AIS Data", style={"text-align": "center"}),
-
-        html.Div([
-            # Get data from API
-            html.Button('Get data', id='get_data_btn'),
-            html.Div(id="output_data_api"),
-
-            # Input to decide how much input to load
-            html.P('Limit'),
-            dcc.Input(id="input_limit", type="number", value=100, placeholder="", debounce=True),
-            html.P('Offset'),
-            dcc.Input(id="input_offset", type="number", value=10, placeholder="", debounce=True),
-        ]),
-
+        html.Div(
+            [
+                # Get data from API
+                html.Button("Get data", id="get_data_btn"),
+                html.Div(id="output_data_api"),
+                # Input to decide how much input to load
+                html.P("Limit"),
+                dcc.Input(
+                    id="input_limit",
+                    type="number",
+                    value=100,
+                    placeholder="",
+                    debounce=True,
+                ),
+                html.P("Offset"),
+                dcc.Input(
+                    id="input_offset",
+                    type="number",
+                    value=10,
+                    placeholder="",
+                    debounce=True,
+                ),
+            ]
+        ),
         # Display data from API in graph
         html.Div(id="output-line-graph"),
         html.Br(),
         dcc.Graph(id="line_graph", figure={}),
-
         # Graph
         html.H3("Local data testing below"),
         dcc.Dropdown(
@@ -85,7 +95,6 @@ app.layout = html.Div(
         html.Div(id="output-graph"),
         html.Br(),
         dcc.Graph(id="my_ais_data", figure={}),
-
         # Pie Chart
         html.H3("Pie Chart Testing"),
         dcc.Dropdown(
@@ -103,7 +112,6 @@ app.layout = html.Div(
         html.Div(id="output-chart"),
         html.Br(),
         dcc.Graph(id="ais_ship_types", figure={}),
-
         # Histogram
         html.H3("Histogram Testing"),
         dcc.Dropdown(
@@ -147,10 +155,7 @@ app.layout = html.Div(
 )
 
 
-@app.callback(
-    Output("my_ais_data", "figure"),
-    Input("graph_input", "value")
-)
+@app.callback(Output("my_ais_data", "figure"), Input("graph_input", "value"))
 def show_graph(graph_input):
     # Showing type of graph based on input
     if graph_input == "timestamp":
@@ -215,9 +220,11 @@ def show_histogram(histogram_input, histogram_slider):
 # Callback for retrieving data from the button
 @app.callback(
     Output("line_graph", "figure"),
-    [Input('get_data_btn', 'n_clicks'),
-     Input('input_limit', 'value'),
-     Input('input_offset', 'value')],
+    [
+        Input("get_data_btn", "n_clicks"),
+        Input("input_limit", "value"),
+        Input("input_offset", "value"),
+    ],
 )
 def get_data(n_clicks, input_limit, input_offset):
     api_json = get_json_api(input_limit, input_offset)
@@ -227,8 +234,8 @@ def get_data(n_clicks, input_limit, input_offset):
     names = []
 
     for course in api_json:
-        mmsi = course['mmsi']
-        for coord in course['coordinates']:
+        mmsi = course["mmsi"]
+        for coord in course["coordinates"]:
             lats = np.append(lats, coord[1])
             lons = np.append(lons, coord[0])
             names = np.append(names, mmsi)
@@ -236,14 +243,20 @@ def get_data(n_clicks, input_limit, input_offset):
         lons = np.append(lons, None)
         names = np.append(names, None)
 
-    fig = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
-                         mapbox_style="stamen-terrain", zoom=6, height=1000)
+    fig = px.line_mapbox(
+        lat=lats,
+        lon=lons,
+        hover_name=names,
+        mapbox_style="stamen-terrain",
+        zoom=6,
+        height=1000,
+    )
     return fig
 
 
 def get_json_api(limit, offset=0):
-    payload = {'limit': limit, 'offset': offset}
-    response = requests.get('http://api:5000/routes', params=payload)
+    payload = {"limit": limit, "offset": offset}
+    response = requests.get("http://api:5000/routes", params=payload)
     content = response.content
     y = json.loads(content)
 
