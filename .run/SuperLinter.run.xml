@@ -16,9 +16,13 @@
               <option name="name" value="VALIDATE_SQL" />
               <option name="value" value="FALSE" />
             </DockerEnvVarImpl>
+            <DockerEnvVarImpl>
+              <option name="name" value="VALIDATE_PYTHON_ISORT" />
+              <option name="value" value="FALSE" />
+            </DockerEnvVarImpl>
           </list>
         </option>
-        <option name="commandLineOptions" value="-v $PROJECT_DIR$:/tmp/lint" />
+        <option name="commandLineOptions" value="-v $PROJECT_DIR$/../sw618f21:/tmp/lint" />
       </settings>
     </deployment>
     <method v="2" />
