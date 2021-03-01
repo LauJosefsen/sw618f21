@@ -1,11 +1,10 @@
-import json
-
+# Dash main app
+import api
 import dash_core_components as dcc
 import dash_html_components as html
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import requests
 from dash import dash
 from dash.dependencies import Input, Output
 
@@ -62,7 +61,7 @@ app.layout = html.Div(
                 dcc.Input(
                     id="input_limit",
                     type="number",
-                    value=100,
+                    value=0,
                     placeholder="",
                     debounce=True,
                 ),
@@ -70,7 +69,7 @@ app.layout = html.Div(
                 dcc.Input(
                     id="input_offset",
                     type="number",
-                    value=10,
+                    value=0,
                     placeholder="",
                     debounce=True,
                 ),
@@ -227,40 +226,32 @@ def show_histogram(histogram_input, histogram_slider):
     ],
 )
 def get_data(n_clicks, input_limit, input_offset):
-    api_json = get_json_api(input_limit, input_offset)
+    api_json = api.get_json_api(input_limit, input_offset, "routes")
 
     lats = []
     lons = []
-    names = []
+    mmsi = []
 
     for course in api_json:
-        mmsi = course["mmsi"]
+        course_mmsi = course["mmsi"]
         for coord in course["coordinates"]:
             lats = np.append(lats, coord[1])
             lons = np.append(lons, coord[0])
-            names = np.append(names, mmsi)
+            mmsi = np.append(mmsi, course_mmsi)
         lats = np.append(lats, None)
         lons = np.append(lons, None)
-        names = np.append(names, None)
+        mmsi = np.append(mmsi, None)
 
     fig = px.line_mapbox(
         lat=lats,
         lon=lons,
-        hover_name=names,
+        hover_name=mmsi,
         mapbox_style="stamen-terrain",
         zoom=6,
         height=1000,
     )
+
     return fig
-
-
-def get_json_api(limit, offset=0):
-    payload = {"limit": limit, "offset": offset}
-    response = requests.get("http://api:5000/routes", params=payload)
-    content = response.content
-    y = json.loads(content)
-
-    return y
 
 
 if __name__ == "__main__":
