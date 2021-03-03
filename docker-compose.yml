@@ -7,7 +7,7 @@ services:
       - "5000:5000"
     volumes: ['./src/api:/api']
     environment:
-      FLASK_DEBUG: 1
+      - PYTHONUNBUFFERED=1
     depends_on:
       - db
     links:
@@ -20,9 +20,13 @@ services:
   dash:
     container_name: dash
     build: ./src/dash
+    depends_on:
+      - api
     ports:
       - "4000:4000"
     volumes: ['./src/dash:/dash']
+    environment:
+      - PYTHONUNBUFFERED=1
   pgadmin:
     container_name: pg_admin
     build: ./src/pgadmin
