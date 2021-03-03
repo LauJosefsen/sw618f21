@@ -7,7 +7,10 @@ import pandas as pd
 import psycopg2
 from geomet import wkt
 
-from data_management.course_cluster import cluster_ais_points_courses
+from data_management.course_cluster import (
+    cluster_ais_points_courses,
+    space_data_preprocessing,
+)
 from data_management.clean_points import is_point_valid
 from model.ais_data_entry import AisDataEntry
 
@@ -160,36 +163,37 @@ class AisDataService:
 
             mmsi_points = [point for point in mmsi_points if is_point_valid(point)]
 
-            mmsi_points = cluster_ais_points_courses(mmsi_points)
+            ais_courses = space_data_preprocessing(mmsi_points)
 
-            # insert course
-            query = """
-                INSERT INTO public.ais_course (mmsi) VALUES (%s);
-                SELECT currval(pg_get_serial_sequence('public.ais_course','id'));
-            """
-            cursor.execute(query, tuple([str(mmsi)]))
-            inserted_id = cursor.fetchall()[0][0]
-
-            # insert points
-            for point in mmsi_points:
+            for index, course in enumerate(ais_courses):
+                # insert course
                 query = """
-                    INSERT INTO public.ais_points
-                    (mmsi, timestamp, location, rot, sog, cog, heading, ais_course_id)
-                     VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s, %s)"""
-                cursor.execute(
-                    query,
-                    (
-                        point.mmsi,
-                        point.timestamp,
-                        point.longitude,
-                        point.latitude,
-                        point.rot,
-                        point.sog,
-                        point.cog,
-                        point.heading,
-                        inserted_id,
-                    ),
-                )
+                    INSERT INTO public.ais_course (mmsi) VALUES (%s);
+                    SELECT currval(pg_get_serial_sequence('public.ais_course','id'));
+                """
+                cursor.execute(query, tuple([f"{str(mmsi)}-{index}"]))
+                inserted_id = cursor.fetchall()[0][0]
+
+                # insert points
+                for point in course:
+                    query = """
+                        INSERT INTO public.ais_points
+                        (mmsi, timestamp, location, rot, sog, cog, heading, ais_course_id)
+                         VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s, %s)"""
+                    cursor.execute(
+                        query,
+                        (
+                            point.mmsi,
+                            point.timestamp,
+                            point.longitude,
+                            point.latitude,
+                            point.rot,
+                            point.sog,
+                            point.cog,
+                            point.heading,
+                            inserted_id,
+                        ),
+                    )
 
         cursor.execute("COMMIT;")
 

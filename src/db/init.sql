@@ -38,7 +38,7 @@ CREATE TABLE public.data
 
 CREATE TABLE public.ais_course (
     id serial primary key,
-    MMSI int,
+    MMSI varchar(50),
     destination varchar(100),
     eta timestamp
 );
