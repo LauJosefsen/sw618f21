@@ -5,7 +5,9 @@ import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
+import tqdm
 from geomet import wkt
+from joblib import Parallel
 
 from data_management.course_cluster import (
     cluster_ais_points_courses,
@@ -16,7 +18,7 @@ from model.ais_data_entry import AisDataEntry
 
 
 class AisDataService:
-    dsn = "dbname=ais user=postgres password=password host=db"
+    dsn = "dbname=ais user=postgres password=password host=localhost" #todo do not push
 
     def __init__(self):
         pass
@@ -131,7 +133,7 @@ class AisDataService:
             c.mmsi, MIN(p.timestamp) as begin,
             MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
             FROM public.ais_course AS c JOIN
-            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id
+            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id WHERE c.mmsi='211815120-0' OR c.mmsi='211815120-1'
             GROUP BY c.id LIMIT %s OFFSET %s;"""
 
         cursor.execute(query, (limit, offset))
@@ -145,14 +147,17 @@ class AisDataService:
         return data
 
     def cluster_points(self):
+        print("Cluster begin!")
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi LIMIT 10"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
-        for mmsi in mmsi_list:
+        print("Loop begin!")
+
+        for mmsi in tqdm.tqdm(mmsi_list):
             mmsi = mmsi[0]
             query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
             cursor.execute(query, tuple([str(mmsi)]))
@@ -164,6 +169,8 @@ class AisDataService:
             mmsi_points = [point for point in mmsi_points if is_point_valid(point)]
 
             ais_courses = space_data_preprocessing(mmsi_points)
+
+            # todo remove courses that are empty
 
             for index, course in enumerate(ais_courses):
                 # insert course
@@ -197,23 +204,3 @@ class AisDataService:
 
         cursor.execute("COMMIT;")
 
-    def get_routes(self, limit, offset):
-        connection = psycopg2.connect(dsn=self.dsn)
-        cursor = connection.cursor()
-        query = """
-            SELECT
-            c.mmsi, MIN(p.timestamp) as begin,
-            MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
-            FROM public.ais_course AS c JOIN
-            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id
-            GROUP BY c.id LIMIT %s OFFSET %s;"""
-
-        cursor.execute(query, (limit, offset))
-
-        data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
-
-        for row in data:
-            row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
-            row.pop("linestring")
-
-        return data

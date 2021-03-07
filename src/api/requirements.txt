@@ -7,3 +7,5 @@ pandas
 d6tstack
 geomet
 geopy
+tqdm
+joblib
