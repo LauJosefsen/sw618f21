@@ -64,4 +64,6 @@ CREATE TABLE public.ais_points
 CREATE INDEX ais_course_id_index ON public.ais_points(MMSI, MMSI_split);
 CREATE INDEX ais_course_timestamp_index ON public.ais_points(timestamp);
 
+CREATE VIEW ais_points_sorted AS SELECT * FROM ais_points ORDER BY timestamp;
+
 COMMIT;
