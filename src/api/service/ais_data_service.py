@@ -7,10 +7,8 @@ import pandas as pd
 import psycopg2
 import tqdm
 from geomet import wkt
-from joblib import Parallel
 
 from data_management.course_cluster import (
-    cluster_ais_points_courses,
     space_data_preprocessing,
 )
 from data_management.clean_points import is_point_valid
@@ -18,7 +16,7 @@ from model.ais_data_entry import AisDataEntry
 
 
 class AisDataService:
-    dsn = "dbname=ais user=postgres password=password host=localhost" #todo do not push
+    dsn = "dbname=ais user=postgres password=password host=db"
 
     def __init__(self):
         pass
@@ -75,8 +73,8 @@ class AisDataService:
         new_dfg["length"] = obj["Length"].astype(float)
         new_dfg["position_fixing_device_type"] = (
             obj["Type of position fixing device"]
-            .astype(str)
-            .apply(self.apply_string_format)
+                .astype(str)
+                .apply(self.apply_string_format)
         )
         new_dfg["draught"] = obj["Draught"].astype(float)
         new_dfg["destination"] = (
@@ -112,11 +110,15 @@ class AisDataService:
     def import_csv_file(self, csv_fname):
         print(csv_fname)
 
+        #remove indexes
+
         cfg_uri_psql = "postgresql+psycopg2://postgres:password@db/ais"
 
         d6tstack.combine_csv.CombinerCSV(
             [csv_fname], apply_after_read=self.apply, add_filename=False
         ).to_psql_combine(cfg_uri_psql, "public.data", if_exists="append")
+
+        #add indexes back
 
     @staticmethod
     def __build_dict(cursor, row):
@@ -128,16 +130,20 @@ class AisDataService:
     def get_routes(self, limit, offset):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        query = """
-            SELECT
+        query = """SELECT
             c.mmsi, MIN(p.timestamp) as begin,
-            MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
-            FROM public.ais_course AS c JOIN
-            (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id WHERE c.mmsi='211815120-0' OR c.mmsi='211815120-1'
-            GROUP BY c.id LIMIT %s OFFSET %s;"""
+            MAX(p.timestamp) as end, ST_AsTexT(ST_Simplify(ST_MakeLine(p.location),0.001)) as linestring
+            FROM public.ais_course AS c JOIN public.ais_points as p ON c.id=p.ais_course_id
+            GROUP BY c.id LIMIT %s OFFSET %s"""
+        # query = """
+        #     SELECT
+        #     c.mmsi, MIN(p.timestamp) as begin,
+        #     MAX(p.timestamp) as end, ST_AsTexT(ST_MakeLine(p.location)) as linestring
+        #     FROM public.ais_course AS c JOIN
+        #     (SELECT * FROM public.ais_points ORDER BY timestamp) as p ON c.id=p.ais_course_id
+        #     GROUP BY c.id LIMIT %s OFFSET %s;"""
 
         cursor.execute(query, (limit, offset))
-
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         for row in data:
@@ -151,7 +157,7 @@ class AisDataService:
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi LIMIT 10"""
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
@@ -201,6 +207,4 @@ class AisDataService:
                             inserted_id,
                         ),
                     )
-
         cursor.execute("COMMIT;")
-

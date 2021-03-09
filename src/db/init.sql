@@ -36,28 +36,32 @@ CREATE TABLE public.data
 	d double precision
 );
 
-CREATE TABLE public.ais_course (
-    id serial primary key,
-    MMSI varchar(50),
-    destination varchar(100),
-    eta timestamp
-);
+CREATE INDEX mmsi_index ON public.data(MMSI);
 
-CREATE INDEX mmsi_index ON public.ais_course(MMSI);
+CREATE TABLE public.ais_course (
+    MMSI int,
+    MMSI_split int,
+    destination varchar(100),
+    eta timestamp,
+    PRIMARY KEY (MMSI, MMSI_split)
+);
 
 CREATE TABLE public.ais_points
 (
     id serial primary key,
     MMSI int,
+    MMSI_split int,
     timestamp timestamp,
     location geometry(point) not null,
     rot double precision,
     sog double precision,
     cog double precision,
     heading int,
-    ais_course_id int,
     CONSTRAINT fk_ais_course
-        FOREIGN KEY(ais_course_id) REFERENCES public.ais_course(id)
+        FOREIGN KEY(MMSI,MMSI_split) REFERENCES public.ais_course(MMSI, MMSI_split)
 );
+
+CREATE INDEX ais_course_id_index ON public.ais_points(MMSI, MMSI_split);
+CREATE INDEX ais_course_id_index ON public.ais_points(timestamp);
 
 COMMIT;

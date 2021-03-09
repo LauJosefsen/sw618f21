@@ -103,7 +103,7 @@ def association(
                 association_value = calc_difference_value(boat[-1], track[0])
 
                 if association_value < threshold_association:
-                    boat.append(*track)
+                    boat.extend(track)
                     track_points.pop(index)
 
         if len(boat) >= threshold_completeness:
