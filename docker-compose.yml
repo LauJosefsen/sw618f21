@@ -36,6 +36,15 @@ services:
     - pgadmin-data:/var/lib/pgadmin
     links:
     - "db:pgsql-server"
+  react:
+    container_name: react
+    build: ./src/frontend
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes: ['./src/frontend:/frontend']
+    ports:
+      - "3000:3000"
+
 volumes:
   db-data:
   pgadmin-data:
