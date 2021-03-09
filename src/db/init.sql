@@ -62,6 +62,6 @@ CREATE TABLE public.ais_points
 );
 
 CREATE INDEX ais_course_id_index ON public.ais_points(MMSI, MMSI_split);
-CREATE INDEX ais_course_id_index ON public.ais_points(timestamp);
+CREATE INDEX ais_course_timestamp_index ON public.ais_points(timestamp);
 
 COMMIT;
