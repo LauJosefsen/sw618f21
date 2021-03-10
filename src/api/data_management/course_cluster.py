@@ -2,44 +2,17 @@ from model.ais_data_entry import AisDataEntry
 import geopy.distance
 
 
-def cluster_ais_points_courses(points: list[AisDataEntry]) -> list[AisDataEntry]:
-    """
-    :param points: Input points have the same MMSI, and are always sorted by timestamp.
-    """
-    offset = 10  # in nautical miles
-    scalar = 1.1  # multiplier of expected distance.
-
-    if len(points) == 0:
-        return []
-
-    course = [points[0]]
-    last_point = points[0]
-    for point in points[1:]:
-        distance_to_last_point = geopy.distance.distance(
-            (last_point.latitude, last_point.longitude),
-            (point.latitude, point.longitude),
-        ).nautical
-
-        last_point.sog = 2
-        expected_distance = (
-            last_point.sog
-            * (point.timestamp - last_point.timestamp).total_seconds()
-            / 3600
-        )
-
-        if expected_distance * scalar + offset < distance_to_last_point:
-            continue
-        course.append(point)
-        last_point = point
-    return course
-
-
 def space_data_preprocessing(
     track_points: list[AisDataEntry],
     threshold_time=10,
     threshold_completeness=1,
     threshold_space=15,
 ) -> list[list[AisDataEntry]]:
+    """
+    Takes a list of points, and returns a list of groups of points.
+    Input should be only one MMSI, and sorted by timestamp.
+    For further reference see: https://doi.org/10.1017/S0373463318000188
+    """
     assign_calculated_sog_if_sog_not_exists(track_points)
     # cleaning time data
     tracks_time = partition(track_points, threshold_time)
@@ -63,6 +36,9 @@ def space_data_preprocessing(
 def partition(
     track_points: list[AisDataEntry], threshold_partition: int
 ) -> list[list[AisDataEntry]]:
+    """
+    Partitions a list of points into
+    """
     if len(track_points) == 0:
         return []
     previous_track_point = track_points[0]
