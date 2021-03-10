@@ -1,4 +1,3 @@
-from data_management.clean_points import is_point_valid
 from model.ais_data_entry import AisDataEntry
 import geopy.distance
 
@@ -23,9 +22,9 @@ def cluster_ais_points_courses(points: list[AisDataEntry]) -> list[AisDataEntry]
 
         last_point.sog = 2
         expected_distance = (
-                last_point.sog
-                * (point.timestamp - last_point.timestamp).total_seconds()
-                / 3600
+            last_point.sog
+            * (point.timestamp - last_point.timestamp).total_seconds()
+            / 3600
         )
 
         if expected_distance * scalar + offset < distance_to_last_point:
@@ -36,10 +35,10 @@ def cluster_ais_points_courses(points: list[AisDataEntry]) -> list[AisDataEntry]
 
 
 def space_data_preprocessing(
-        track_points: list[AisDataEntry],
-        threshold_time=10,
-        threshold_completeness=1,
-        threshold_space=15,
+    track_points: list[AisDataEntry],
+    threshold_time=10,
+    threshold_completeness=1,
+    threshold_space=15,
 ) -> list[list[AisDataEntry]]:
     assign_calculated_sog_if_sog_not_exists(track_points)
     # cleaning time data
@@ -62,7 +61,7 @@ def space_data_preprocessing(
 
 
 def partition(
-        track_points: list[AisDataEntry], threshold_partition: int
+    track_points: list[AisDataEntry], threshold_partition: int
 ) -> list[list[AisDataEntry]]:
     if len(track_points) == 0:
         return []
@@ -90,9 +89,9 @@ def partition(
 
 
 def association(
-        track_points: list[list[AisDataEntry]],
-        threshold_association,
-        threshold_completeness,
+    track_points: list[list[AisDataEntry]],
+    threshold_association,
+    threshold_completeness,
 ):
     output = []
     while track_points:
@@ -128,7 +127,7 @@ def calc_difference_value(a, b):
 
 
 def assign_calculated_sog_if_sog_not_exists(
-        points: list[AisDataEntry],
+    points: list[AisDataEntry],
 ):
     if len(points) == 0:
         return
@@ -141,8 +140,8 @@ def assign_calculated_sog_if_sog_not_exists(
             (point.latitude, point.longitude),
         ).nautical
         time_distance = (
-                                point.timestamp - last_point.timestamp
-                        ).total_seconds() / 3600.0
+            point.timestamp - last_point.timestamp
+        ).total_seconds() / 3600.0
 
         if time_distance == 0:
             time_distance = 1

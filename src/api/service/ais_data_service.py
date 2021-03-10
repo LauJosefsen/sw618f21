@@ -77,9 +77,7 @@ class AisDataService:
             new_dfg["cog"] = obj["COG"].astype(float)
             new_dfg["heading"] = obj["Heading"].astype(float)
             new_dfg["imo"] = obj["IMO"].astype(str).apply(apply_string_format)
-            new_dfg["callsign"] = (
-                obj["Callsign"].astype(str).apply(apply_string_format)
-            )
+            new_dfg["callsign"] = obj["Callsign"].astype(str).apply(apply_string_format)
             new_dfg["name"] = obj["Name"].astype(str).apply(apply_string_format)
             new_dfg["ship_type"] = (
                 obj["Ship type"].astype(str).apply(apply_string_format)
