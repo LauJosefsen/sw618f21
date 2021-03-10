@@ -135,9 +135,7 @@ def get_speed_between_points(a, b):
     distance = geopy.distance.distance(
         (a.latitude, a.longitude), (b.latitude, b.longitude),
     ).nautical
-    time_distance = (
-                            b.timestamp - a.timestamp
-                    ).total_seconds() / 3600.0
+    time_distance = (b.timestamp - a.timestamp).total_seconds() / 3600.0
     if time_distance == 0:
         time_distance = 1
     actual_speed = distance / time_distance
