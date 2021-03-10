@@ -12,6 +12,11 @@ def space_data_preprocessing(
     Takes a list of points, and returns a list of groups of points.
     Input should be only one MMSI, and sorted by timestamp.
     For further reference see: https://doi.org/10.1017/S0373463318000188
+    :param track_points: List of sorted points by timestamp
+    :param threshold_time:
+    :param threshold_completeness:
+    :param threshold_space:
+    :return:
     """
     assign_calculated_sog_if_sog_not_exists(track_points)
     # cleaning time data
@@ -37,7 +42,10 @@ def partition(
     track_points: list[AisDataEntry], threshold_partition: int
 ) -> list[list[AisDataEntry]]:
     """
-    Partitions a list of points into
+
+    :param track_points:
+    :param threshold_partition:
+    :return:
     """
     if len(track_points) == 0:
         return []
