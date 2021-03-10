@@ -8,9 +8,7 @@ import psycopg2
 import tqdm
 from geomet import wkt
 
-from data_management.course_cluster import (
-    space_data_preprocessing,
-)
+from data_management.course_cluster import space_data_preprocessing
 from data_management.clean_points import is_point_valid
 from model.ais_data_entry import AisDataEntry
 
@@ -129,8 +127,8 @@ class AisDataService:
         SELECT
             c.mmsi, MIN(p.timestamp) as timestamp_begin,
             MAX(p.timestamp) as timestamp_end, ST_AsTexT(ST_Simplify(ST_MakeLine(p.location),%s)) as linestring
-        FROM public.ais_course AS c 
-        JOIN public.ais_points_sorted as p ON c.mmsi=p.mmsi AND c.mmsi_split = p.mmsi_split 
+        FROM public.ais_course AS c
+        JOIN public.ais_points_sorted as p ON c.mmsi=p.mmsi AND c.mmsi_split = p.mmsi_split
         GROUP BY c.mmsi, c.mmsi_split;
         """
 

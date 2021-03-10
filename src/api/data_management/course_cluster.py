@@ -113,8 +113,7 @@ def association(
 
 def calc_difference_value(a, b):
     distance = geopy.distance.distance(
-        (b.latitude, b.longitude),
-        (a.latitude, a.longitude),
+        (b.latitude, b.longitude), (a.latitude, a.longitude),
     ).nautical
     time_distance = (a.timestamp - b.timestamp).total_seconds() / 3600.0
     if time_distance == 0:
@@ -126,9 +125,7 @@ def calc_difference_value(a, b):
     return actual_speed - a.sog
 
 
-def assign_calculated_sog_if_sog_not_exists(
-    points: list[AisDataEntry],
-):
+def assign_calculated_sog_if_sog_not_exists(points: list[AisDataEntry], ):
     if len(points) == 0:
         return
     last_point = points[0]
