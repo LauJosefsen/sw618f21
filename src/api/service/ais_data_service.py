@@ -163,9 +163,7 @@ class AisDataService:
 
             mmsi_points = [point for point in mmsi_points if is_point_valid(point)]
 
-            ais_courses = space_data_preprocessing(mmsi_points)
-
-            # todo remove courses that are empty
+            ais_courses = [ais_course for ais_course in space_data_preprocessing(mmsi_points) if len(ais_course) > 0]
 
             for index, course in enumerate(ais_courses):
                 # insert course
