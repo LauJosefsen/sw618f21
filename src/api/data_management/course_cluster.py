@@ -3,9 +3,7 @@ import geopy.distance
 
 
 def space_data_preprocessing(
-    track_points: list[AisDataEntry],
-    threshold_completeness=1,
-    threshold_space=15,
+    track_points: list[AisDataEntry], threshold_completeness=1, threshold_space=15,
 ) -> list[list[AisDataEntry]]:
     """
     Takes a list of points, and returns a list of groups of points.
