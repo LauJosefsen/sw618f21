@@ -71,9 +71,7 @@ def partition(
 
 
 def association(
-    track_points: list[list[AisDataEntry]],
-    threshold_space,
-    threshold_completeness,
+    track_points: list[list[AisDataEntry]], threshold_space, threshold_completeness
 ) -> list[list[AisDataEntry]]:
     """
     Associates tracks that are similar
