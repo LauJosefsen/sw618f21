@@ -1,7 +1,10 @@
 CREATE DATABASE ais;
 
-
 \c ais
+
+START TRANSACTION;
+
+CREATE EXTENSION postgis;
 
 CREATE TABLE public.data
 (
@@ -32,5 +35,35 @@ CREATE TABLE public.data
 	c double precision,
 	d double precision
 );
+
+CREATE INDEX mmsi_index ON public.data(MMSI);
+
+CREATE TABLE public.ais_course (
+    MMSI int,
+    MMSI_split int,
+    destination varchar(100),
+    eta timestamp,
+    PRIMARY KEY (MMSI, MMSI_split)
+);
+
+CREATE TABLE public.ais_points
+(
+    id serial primary key,
+    MMSI int,
+    MMSI_split int,
+    timestamp timestamp,
+    location geometry(point) not null,
+    rot double precision,
+    sog double precision,
+    cog double precision,
+    heading int,
+    CONSTRAINT fk_ais_course
+        FOREIGN KEY(MMSI,MMSI_split) REFERENCES public.ais_course(MMSI, MMSI_split)
+);
+
+CREATE INDEX ais_course_id_index ON public.ais_points(MMSI, MMSI_split);
+CREATE INDEX ais_course_timestamp_index ON public.ais_points(timestamp);
+
+CREATE VIEW ais_points_sorted AS SELECT * FROM ais_points ORDER BY timestamp;
 
 COMMIT;

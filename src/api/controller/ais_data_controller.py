@@ -19,6 +19,14 @@ def import_ais_data(
 
 
 @inject
+def cluster_points(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    data = ais_data_service.cluster_points()
+    return jsonify(data)
+
+
+@inject
 def get_routes(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
