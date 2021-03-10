@@ -112,36 +112,33 @@ def association(
 
 
 def calc_difference_value(a, b):
-    distance = geopy.distance.distance(
-        (b.latitude, b.longitude), (a.latitude, a.longitude),
-    ).nautical
-    time_distance = (a.timestamp - b.timestamp).total_seconds() / 3600.0
-    if time_distance == 0:
-        time_distance = 1
-    actual_speed = distance / time_distance
+    actual_speed = get_speed_between_points(a, b)
 
     if not a.sog:
         return actual_speed - a.calc_sog
     return actual_speed - a.sog
 
 
-def assign_calculated_sog_if_sog_not_exists(points: list[AisDataEntry], ):
+def assign_calculated_sog_if_sog_not_exists(points: list[AisDataEntry]):
     if len(points) == 0:
         return
     last_point = points[0]
     for point in points[1:]:
         if point.sog:
             continue
-        distance = geopy.distance.distance(
-            (last_point.latitude, last_point.longitude),
-            (point.latitude, point.longitude),
-        ).nautical
-        time_distance = (
-            point.timestamp - last_point.timestamp
-        ).total_seconds() / 3600.0
-
-        if time_distance == 0:
-            time_distance = 1
-        actual_speed = distance / time_distance
+        actual_speed = get_speed_between_points(last_point, point)
 
         point.calc_sog = min(200, actual_speed)
+
+
+def get_speed_between_points(a, b):
+    distance = geopy.distance.distance(
+        (a.latitude, a.longitude), (b.latitude, b.longitude),
+    ).nautical
+    time_distance = (
+                            b.timestamp - a.timestamp
+                    ).total_seconds() / 3600.0
+    if time_distance == 0:
+        time_distance = 1
+    actual_speed = distance / time_distance
+    return actual_speed
