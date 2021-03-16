@@ -8,62 +8,86 @@ CREATE EXTENSION postgis;
 
 CREATE TABLE public.data
 (
-	timestamp timestamp not null,
-	mobile_type varchar(50),
-	MMSI int,
-	latitude double precision,
-	longitude double precision,
-	nav_stat varchar(50),
-	rot double precision,
-	sog double precision,
-	cog double precision,
-	heading double precision,
-	imo varchar(50),
-	callsign varchar(10),
-	name text,
-	ship_type varchar(50),
-	cargo_type varchar(50),
-	width double precision,
-	length double precision,
-	position_fixing_device_type varchar(50),
-	draught double precision,
-	destination varchar(100),
-	eta timestamp,
-	data_src_type varchar(20),
-	a double precision,
-	b double precision,
-	c double precision,
-	d double precision
+    timestamp                   timestamp not null,
+    mobile_type                 varchar(50),
+    MMSI                        int,
+    latitude                    double precision,
+    longitude                   double precision,
+    nav_stat                    varchar(50),
+    rot                         double precision,
+    sog                         double precision,
+    cog                         double precision,
+    heading                     double precision,
+    imo                         int,
+    callsign                    varchar(10),
+    name                        text,
+    ship_type                   varchar(50),
+    cargo_type                  varchar(50),
+    width                       double precision,
+    length                      double precision,
+    position_fixing_device_type varchar(50),
+    draught                     double precision,
+    destination                 varchar(100),
+    eta                         timestamp,
+    data_src_type               varchar(20),
+    a                           double precision,
+    b                           double precision,
+    c                           double precision,
+    d                           double precision,
+    is_processed          bool
 );
 
-CREATE INDEX mmsi_index ON public.data(MMSI);
+CREATE INDEX mmsi_index ON public.data (MMSI);
 
-CREATE TABLE public.ais_course (
-    MMSI int,
-    MMSI_split int,
-    destination varchar(100),
-    eta timestamp,
-    PRIMARY KEY (MMSI, MMSI_split)
-);
-
-CREATE TABLE public.ais_points
+CREATE TABLE public.ship
 (
-    id serial primary key,
-    MMSI int,
-    MMSI_split int,
-    timestamp timestamp,
-    location geometry(point) not null,
-    rot double precision,
-    sog double precision,
-    cog double precision,
-    heading int,
-    CONSTRAINT fk_ais_course
-        FOREIGN KEY(MMSI,MMSI_split) REFERENCES public.ais_course(MMSI, MMSI_split)
+    id          bigserial primary key,
+    MMSI        int,
+    IMO         int,
+    mobile_type varchar(50),
+    callsign    varchar(10),
+    name        text,
+    ship_type   varchar(50),
+    width       double precision,
+    length      double precision,
+    draught     double precision,
+    a           double precision,
+    b           double precision,
+    c           double precision,
+    d           double precision
 );
 
-CREATE INDEX ais_course_id_index ON public.ais_points(MMSI, MMSI_split);
-CREATE INDEX ais_course_timestamp_index ON public.ais_points(timestamp);
+CREATE TABLE public.course
+(
+    id          bigserial primary key,
+    ship_id     bigint,
+    destination varchar(100),
+    cargo_type  varchar(50),
+    eta         timestamp,
+    CONSTRAINT fk_course_ship
+        FOREIGN KEY (ship_id) REFERENCES public.ship (id)
+);
 
-CREATE VIEW ais_points_sorted AS SELECT * FROM ais_points ORDER BY timestamp;
+CREATE TABLE public.points
+(
+    id                          bigserial primary key,
+    course_id                   bigint,
+    timestamp                   timestamp,
+    location                    geometry(point) not null,
+    rot                         double precision,
+    sog                         double precision,
+    cog                         double precision,
+    heading                     int,
+    position_fixing_device_type varchar(50),
+    CONSTRAINT fk_ais_course
+        FOREIGN KEY (course_id) REFERENCES public.course (id)
+);
+
+CREATE INDEX course_timestamp_index ON public.points (timestamp);
+
+CREATE VIEW points_sorted AS
+SELECT *
+FROM points
+ORDER BY timestamp;
 
 COMMIT;

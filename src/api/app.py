@@ -2,7 +2,6 @@ import controller.ais_data_controller
 from container import Container
 from flask import Flask
 
-
 container = Container()
 app = Flask(__name__)
 container.wire(modules=[controller.ais_data_controller])
@@ -14,3 +13,10 @@ app.add_url_rule("/routes", "get_routes", controller.ais_data_controller.get_rou
 app.add_url_rule(
     "/cluster-points", "cluster_points", controller.ais_data_controller.cluster_points
 )
+
+
+@app.after_request  # blueprint can also be app~~
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'  # todo vulnerable to xss
+    return response

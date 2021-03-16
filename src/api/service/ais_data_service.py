@@ -9,7 +9,6 @@ import tqdm
 from geomet import wkt
 
 from data_management.course_cluster import space_data_preprocessing
-from data_management.clean_points import is_point_valid
 from model.ais_data_entry import AisDataEntry
 
 
@@ -31,6 +30,7 @@ class AisDataService:
         query = "SELECT * FROM public.data LIMIT %s OFFSET %s;"
 
         cursor.execute(query, (limit, offset))
+
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
     def import_ais_data(self):
@@ -87,8 +87,8 @@ class AisDataService:
             new_dfg["length"] = obj["Length"].astype(float)
             new_dfg["position_fixing_device_type"] = (
                 obj["Type of position fixing device"]
-                .astype(str)
-                .apply(apply_string_format)
+                    .astype(str)
+                    .apply(apply_string_format)
             )
             new_dfg["draught"] = obj["Draught"].astype(float)
             new_dfg["destination"] = (
@@ -126,14 +126,18 @@ class AisDataService:
         query = """
         SELECT
             c.mmsi, MIN(p.timestamp) as timestamp_begin,
-            MAX(p.timestamp) as timestamp_end, ST_AsTexT(ST_Simplify(ST_MakeLine(p.location),%s)) as linestring
+            MAX(p.timestamp) as timestamp_end, ST_AsText(ST_FlipCoordinates(ST_MakeLine(p.location))) as linestring
         FROM public.ais_course AS c
         JOIN public.ais_points_sorted as p ON c.mmsi=p.mmsi AND c.mmsi_split = p.mmsi_split
-        GROUP BY c.mmsi, c.mmsi_split;
+        GROUP BY c.mmsi, c.mmsi_split
+        LIMIT %s OFFSET %s;
         """
 
-        cursor.execute(query, (simplify_tolerance, limit, offset))
+        cursor.execute(query, (limit, offset))
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        cursor.close()
+        connection.close()
 
         for row in data:
             row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
@@ -154,14 +158,18 @@ class AisDataService:
 
         for mmsi in tqdm.tqdm(mmsi_list):
             mmsi = mmsi[0]
-            query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
+            query = """
+            SELECT mmsi, timestamp, longitude, latitude, rot, sog, cog, heading FROM public.data 
+            WHERE mmsi = %s AND 
+            (mobile_type = 'Class A' OR mobile_type = 'Class B') AND 
+            longitude <= 180 AND longitude >=-180 AND
+            latitude <= 90 AND latitude >= -90 ORDER BY timestamp
+            """
             cursor.execute(query, tuple([str(mmsi)]))
             mmsi_points = [
                 AisDataEntry(**AisDataService.__build_dict(cursor, row))
                 for row in cursor.fetchall()
             ]
-
-            mmsi_points = [point for point in mmsi_points if is_point_valid(point)]
 
             ais_courses = [
                 ais_course
@@ -181,7 +189,7 @@ class AisDataService:
                     query = """
                         INSERT INTO public.ais_points
                         (mmsi, mmsi_split, timestamp, location, rot, sog, cog, heading)
-                         VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s, %s)"""
+                             VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s)"""
                     cursor.execute(
                         query,
                         (
@@ -196,4 +204,42 @@ class AisDataService:
                             point.heading,
                         ),
                     )
-        cursor.execute("COMMIT;")
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
+
+    def new_cluster(self):
+
+        # Select unique MMSI from data where is_procssed is false
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        cursor.execute("START TRANSACTION;")
+        query = """SELECT mmsi FROM public.data WHERE is_processed =  False GROUP BY mmsi"""
+        cursor.execute(query)
+        mmsi_list = cursor.fetchall()
+
+        # For each of these MMSI:
+        for mmsi in mmsi_list:
+            query = """SELECT * FROM public.ship WHERE mmsi = %s"""
+            cursor.execute(query, tuple(mmsi))
+            ships = cursor.fetchall()
+
+            if len(ships) > 0:
+                # do some magic connecting courses if they are indeed connected.
+                pass
+            else:
+                # make a new ship, and cluster as normal
+                query = """
+                INSERT INTO public.ship
+                 (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
+                 VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor.execute(query, ())
+                pass
+
+
+
+
+
+        pass
