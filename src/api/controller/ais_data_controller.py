@@ -22,7 +22,7 @@ def import_ais_data(
 def cluster_points(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    data = ais_data_service.cluster_points()
+    data = ais_data_service.new_cluster()
     return jsonify(data)
 
 
@@ -30,7 +30,7 @@ def cluster_points(
 def get_routes(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
-    return jsonify(ais_data_service.get_routes(1, 5))
+    return jsonify(ais_data_service.get_routes(100, 5))
 
 @inject
 def import_enc_data(ais_data_service: AisDataService = Provide[Container.ais_data_service]):

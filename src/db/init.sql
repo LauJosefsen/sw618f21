@@ -18,7 +18,7 @@ CREATE TABLE public.data
     sog                         double precision,
     cog                         double precision,
     heading                     double precision,
-    imo                         int,
+    imo                         varchar(10),
     callsign                    varchar(10),
     name                        text,
     ship_type                   varchar(50),
@@ -34,7 +34,7 @@ CREATE TABLE public.data
     b                           double precision,
     c                           double precision,
     d                           double precision,
-    is_processed          bool
+    is_processed                bool DEFAULT False
 );
 
 CREATE INDEX mmsi_index ON public.data (MMSI);
@@ -43,7 +43,7 @@ CREATE TABLE public.ship
 (
     id          bigserial primary key,
     MMSI        int,
-    IMO         int,
+    IMO         varchar(10),
     mobile_type varchar(50),
     callsign    varchar(10),
     name        text,
@@ -57,21 +57,21 @@ CREATE TABLE public.ship
     d           double precision
 );
 
-CREATE TABLE public.course
+CREATE TABLE public.track
 (
     id          bigserial primary key,
     ship_id     bigint,
     destination varchar(100),
     cargo_type  varchar(50),
     eta         timestamp,
-    CONSTRAINT fk_course_ship
+    CONSTRAINT fk_track_ship
         FOREIGN KEY (ship_id) REFERENCES public.ship (id)
 );
 
 CREATE TABLE public.points
 (
     id                          bigserial primary key,
-    course_id                   bigint,
+    track_id                   bigint,
     timestamp                   timestamp,
     location                    geometry(point) not null,
     rot                         double precision,
@@ -79,11 +79,11 @@ CREATE TABLE public.points
     cog                         double precision,
     heading                     int,
     position_fixing_device_type varchar(50),
-    CONSTRAINT fk_ais_course
-        FOREIGN KEY (course_id) REFERENCES public.course (id)
+    CONSTRAINT fk_ais_track
+        FOREIGN KEY (track_id) REFERENCES public.track (id)
 );
 
-CREATE INDEX course_timestamp_index ON public.points (timestamp);
+CREATE INDEX track_timestamp_index ON public.points (timestamp);
 
 CREATE VIEW points_sorted AS
 SELECT *

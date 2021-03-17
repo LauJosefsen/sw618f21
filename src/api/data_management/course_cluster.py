@@ -1,10 +1,11 @@
-from model.ais_data_entry import AisDataEntry
 import geopy.distance
+
+from model.ais_point import AisPoint
 
 
 def space_data_preprocessing(
-    track_points: list[AisDataEntry], threshold_completeness=1, threshold_space=15,
-) -> list[list[AisDataEntry]]:
+    track_points: list[AisPoint], threshold_completeness=1, threshold_space=15,
+) -> list[list[AisPoint]]:
     """
     Takes a list of points, and returns a list of groups of points.
     Input should be only one MMSI, and sorted by timestamp.
@@ -35,8 +36,8 @@ def space_data_preprocessing(
 
 
 def partition(
-    track_points: list[AisDataEntry], threshold_space: int
-) -> list[list[AisDataEntry]]:
+    track_points: list[AisPoint], threshold_space: int
+) -> list[list[AisPoint]]:
     """
     Takes a list of points and partitions it into a list of groups of points based on the space threshold.
     :param track_points: List of sorted points by timestamp
@@ -69,8 +70,8 @@ def partition(
 
 
 def association(
-    track_points: list[list[AisDataEntry]], threshold_space, threshold_completeness
-) -> list[list[AisDataEntry]]:
+    track_points: list[list[AisPoint]], threshold_space, threshold_completeness
+) -> list[list[AisPoint]]:
     """
     Associates tracks that are similar
     :param track_points: List of groups of points
@@ -110,7 +111,7 @@ def calc_difference_value(a, b):
     return actual_speed - a.sog
 
 
-def assign_calculated_sog_if_sog_not_exists(points: list[AisDataEntry]):
+def assign_calculated_sog_if_sog_not_exists(points: list[AisPoint]):
     """
     In case SOG is not defined, we set an approximate value by calculating SOG.
     :param points: List of points
@@ -135,7 +136,7 @@ def get_speed_between_points(a, b):
     :return: Speed in knots
     """
     distance = geopy.distance.distance(
-        (a.latitude, a.longitude), (b.latitude, b.longitude),
+        (a.location[1], a.location[0]), (b.location[1], b.location[0]),
     ).nautical
     time_distance = (b.timestamp - a.timestamp).total_seconds() / 3600.0
     if time_distance == 0:
