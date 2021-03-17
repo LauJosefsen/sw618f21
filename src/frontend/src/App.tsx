@@ -4,7 +4,7 @@ import './App.css';
 import * as L from 'leaflet';
 import {MapContainer, TileLayer, Marker, Popup} from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
-import {CourseOnMap} from './shared/routes_on_map';
+import {PointsOnMap} from './shared/points_on_map';
 import {AisPoint} from './models/ais_points';
 import {useQuery} from 'react-query';
 
@@ -42,7 +42,7 @@ function App() {
                 <p>
                     Map
                 </p>
-                <CourseOnMap course={data}/>
+                <PointsOnMap points={data}/>
             </header>
         </div>
     );
