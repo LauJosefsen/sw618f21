@@ -33,6 +33,64 @@ class AisDataService:
 
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
+    def import_enc_data(self):
+        print("Importing enc data..")
+        for entry in os.scandir("./import"):
+            if not entry.is_dir() and ".txt" in entry.name:
+                print(f"Importing {entry.name}")
+                self.import_enc_file(entry.path)
+                print(f"Done importing {entry.name}")
+
+    def import_enc_file(self, enc_fname):
+        colnames = [
+            "price_group",
+            "cell_name",
+            "cell_title",
+            "edition",
+            "edition_date",
+            "update",
+            "update_date",
+            "unknown",
+            "south_limit",
+            "west_limit",
+            "north_limit",
+            "east_limit"
+        ]
+
+        df = pd.read_csv(enc_fname, delimiter=",", names=colnames)
+        connection = psycopg2.connect(dsn=self.dsn)
+
+        for index, row in df.iterrows():
+            cursor = connection.cursor()
+            query = """INSERT INTO enc_cells(cell_name, cell_title, edition,
+             edition_date, update, update_date, south_limit, west_limit, north_limit, east_limit) 
+            values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+
+            cursor.execute(query, (row['cell_name'], row['cell_title'], self.check_if_none(row, 'edition'),
+                                   self.apply_date_if_not_none(str(row['edition_date'])),
+                                   self.check_if_none(row, 'update'), self.apply_date_if_not_none(str(row['update_date'])),
+                                   row['south_limit'],
+                                   row['west_limit'], row['north_limit'],
+                                   row['east_limit']))
+
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
+    def check_if_none(self, row, col_name):
+        # Checks for missing values in col
+        if pd.isna(row[col_name]):
+            return 0
+        else:
+            return row[col_name]
+
+
+    def apply_date_if_not_none(self, str_in):
+        if str_in == "nan":
+            return None
+        return datetime.strptime(str_in, "%d/%m/%y") if str_in else None
+
     def import_ais_data(self):
         print("Importing ais data..")
         for entry in os.scandir("./import"):

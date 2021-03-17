@@ -90,4 +90,18 @@ SELECT *
 FROM points
 ORDER BY timestamp;
 
+CREATE TABLE public.enc_cells
+(
+    cell_name varchar(50) primary key,
+    cell_title text,
+    edition int,
+    edition_date date,
+    update int,
+    update_date date,
+    south_limit double precision,
+    west_limit double precision,
+    north_limit double precision,
+    east_limit double precision
+);
+
 COMMIT;

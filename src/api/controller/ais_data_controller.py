@@ -31,3 +31,8 @@ def get_routes(ais_data_service: AisDataService = Provide[Container.ais_data_ser
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
     return jsonify(ais_data_service.get_routes(1, 5))
+
+@inject
+def import_enc_data(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
+    ais_data_service.import_enc_data()
+    return "done"
