@@ -7,6 +7,7 @@ import pandas as pd
 import psycopg2
 from geomet import wkt
 from psycopg2.pool import ThreadedConnectionPool
+from psycopg2.extensions import AsIs
 
 from data_management.course_cluster import space_data_preprocessing
 from model.ais_point import AisPoint
@@ -24,14 +25,24 @@ class AisDataService:
     # used for d6tstack utilities when importing csv files.
     cfg_uri_psql = f"postgresql+psycopg2://{__user}:{__pasword}@{__host}/{__database}"
 
-    def fetch_limit(self, limit, offset=0):
+    def fetch_all_limit(self, table_name, limit, offset=0):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        query = "SELECT * FROM public.data LIMIT %s OFFSET %s;"
+        query = "SELECT * FROM public.%s LIMIT %s OFFSET %s;"
 
-        cursor.execute(query, (limit, offset))
+        cursor.execute(query, (AsIs(table_name), limit, offset))
 
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+    def fetch_specific_limit(self, col_names, table_name, limit, offset=0):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = "SELECT %s FROM public.%s LIMIT %s OFFSET %s;"
+
+        cursor.execute(query, (AsIs(col_names), AsIs(table_name), limit, offset))
+
+        return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
 
     def import_enc_data(self):
         print("Importing enc data..")
@@ -63,15 +74,21 @@ class AisDataService:
         for index, row in df.iterrows():
             cursor = connection.cursor()
             query = """INSERT INTO enc_cells(cell_name, cell_title, edition,
-             edition_date, update, update_date, south_limit, west_limit, north_limit, east_limit) 
-            values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+             edition_date, update, update_date, location)
+            values(%s, %s, %s, %s, %s, %s, ST_MakePolygon(ST_GeomFromText(%s)))"""
+
+            west_limit = row['west_limit']
+            north_limit = row['north_limit']
+            east_limit = row['east_limit']
+            south_limit = row['south_limit']
+
+            linestring = f'LINESTRING({west_limit} {north_limit}, {east_limit} {north_limit}, {east_limit} {south_limit}, {west_limit} {south_limit}, {west_limit} {north_limit})'
 
             cursor.execute(query, (row['cell_name'], row['cell_title'], self.check_if_none(row, 'edition'),
                                    self.apply_date_if_not_none(str(row['edition_date'])),
                                    self.check_if_none(row, 'update'), self.apply_date_if_not_none(str(row['update_date'])),
-                                   row['south_limit'],
-                                   row['west_limit'], row['north_limit'],
-                                   row['east_limit']))
+                                   linestring
+                                   ))
 
         connection.commit()
 

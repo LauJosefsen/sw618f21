@@ -1,11 +1,13 @@
 import * as React from 'react';
 import * as L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, Rectangle, Polyline, Polygon } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { AisPoint } from '../models/ais_points';
+import {EncCell} from "../models/enc_cells";
 
 interface propsInterface {
     points: AisPoint[]
+    enc: EncCell[]
 }
 
 export const PointsOnMap = (props: propsInterface) => {
@@ -21,12 +23,15 @@ export const PointsOnMap = (props: propsInterface) => {
         shadowUrl: defaultMarkerShadow,
     });
 
+
+
     return (
         <MapContainer center={[56, 10]} zoom={7} scrollWheelZoom={true}>
             <TileLayer 
                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+
             {props.points.map(points => {
                 return (
                     <Marker position={L.latLng(points.latitude,points.longitude)} icon={defaultIcon}>
@@ -36,6 +41,26 @@ export const PointsOnMap = (props: propsInterface) => {
                     </Marker>
                 )
             })}
+
+
+            <CircleMarker center={[51.51, -0.12]} pathOptions={{color: 'red'}} radius={20}>
+                  <Popup>Popup in CircleMarker</Popup>
+            </CircleMarker>
+
+
+            {props.enc.map(enc => {
+                return (
+                        <Rectangle bounds={[[enc.north_limit, enc.west_limit], [enc.south_limit, enc.east_limit]]} pathOptions={{color: 'red'}}>
+                            <Popup>
+                                {enc.cell_name}
+                                 <br />
+                                {enc.cell_title}
+                            </Popup>
+                        </Rectangle>
+                )
+            })}
+
+
 
         </MapContainer>
     )

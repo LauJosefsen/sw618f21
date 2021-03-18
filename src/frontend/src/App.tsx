@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import {PointsOnMap} from './shared/points_on_map';
 import {AisPoint} from './models/ais_points';
 import {useQuery} from 'react-query';
+import {EncCell} from "./models/enc_cells";
 
 function App() {
     const position = L.latLng(51.505, -0.09);
@@ -15,34 +16,57 @@ function App() {
 
     const defaultMarkerShadow = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAApCAQAAAACach9AAACMUlEQVR4Ae3ShY7jQBAE0Aoz/f9/HTMzhg1zrdKUrJbdx+Kd2nD8VNudfsL/Th///dyQN2TH6f3y/BGpC379rV+S+qqetBOxImNQXL8JCAr2V4iMQXHGNJxeCfZXhSRBcQMfvkOWUdtfzlLgAENmZDcmo2TVmt8OSM2eXxBp3DjHSMFutqS7SbmemzBiR+xpKCNUIRkdkkYxhAkyGoBvyQFEJEefwSmmvBfJuJ6aKqKWnAkvGZOaZXTUgFqYULWNSHUckZuR1HIIimUExutRxwzOLROIG4vKmCKQt364mIlhSyzAf1m9lHZHJZrlAOMMztRRiKimp/rpdJDc9Awry5xTZCte7FHtuS8wJgeYGrex28xNTd086Dik7vUMscQOa8y4DoGtCCSkAKlNwpgNtphjrC6MIHUkR6YWxxs6Sc5xqn222mmCRFzIt8lEdKx+ikCtg91qS2WpwVfBelJCiQJwvzixfI9cxZQWgiSJelKnwBElKYtDOb2MFbhmUigbReQBV0Cg4+qMXSxXSyGUn4UbF8l+7qdSGnTC0XLCmahIgUHLhLOhpVCtw4CzYXvLQWQbJNmxoCsOKAxSgBJno75avolkRw8iIAFcsdc02e9iyCd8tHwmeSSoKTowIgvscSGZUOA7PuCN5b2BX9mQM7S0wYhMNU74zgsPBj3HU7wguAfnxxjFQGBE6pwN+GjME9zHY7zGp8wVxMShYX9NXvEWD3HbwJf4giO4CFIQxXScH1/TM+04kkBiAAAAAElFTkSuQmCC';
 
-
     var defaultIcon = new L.Icon({
         iconUrl: defaultMarker,
         iconAnchor: [12, 41],
         shadowUrl: defaultMarkerShadow,
     });
 
+    function decode_polygon_to_limits(data: Array<EncCell>): Array<EncCell> {
+        // iterate every location in data and write new limit fields
+        data.forEach(enc_cell => {
+            // input to decode e.g. "POLYGON((-77 87.05,10 87.05,10 83.5,-77 83.5,-77 87.05))"
+            // Deleting first 9 and last 2, and replacing , with ' '. Lastly, split on ' '
+            let split_location: string[] = enc_cell.location.substring(9, enc_cell.location.length - 2).replaceAll(",", " ").split(" ")
 
-    const {isLoading, error, data} = useQuery('repoData', () =>
+            // the + operator acts as typecast to int
+            enc_cell.west_limit = +split_location[0]
+            enc_cell.north_limit = +split_location[1]
+            enc_cell.east_limit = +split_location[2]
+            enc_cell.south_limit = +split_location[5]
+        });
+
+        return data;
+    }
+
+
+    const { isLoading: loading_point, error: error_point, data: data_point } = useQuery('repoPointData', () =>
         fetch('http://localhost:5000/routes?limit=20000').then(res =>
+                res.json()
+        ));
+
+    const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery('repoENCData', () =>
+        fetch('http://localhost:5000/get_enc_cells?limit=20000').then(res =>
             res.json()
-        )
-    )
+        ));
 
-    if (isLoading) return <>'Loading...'</>
 
-    if (error) return <>'An error has occurred: ' + error</>
+    if (loading_point || loading_enc) return <>'Loading...'</>
 
-    console.log(data)
+    if (error_point || error_enc) return <>'An error has occurred: ' + error</>
+
+    console.log(data_point)
+    console.log(data_enc)
+
 
     return (
-        
+
         <div className="App">
             <header className="App-header">
                 <p>
                     Map
                 </p>
-                <PointsOnMap points={data}/>
+                <PointsOnMap points={data_point} enc={decode_polygon_to_limits(data_enc)}/>
             </header>
         </div>
     );

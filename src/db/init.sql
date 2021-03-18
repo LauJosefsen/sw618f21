@@ -71,7 +71,7 @@ CREATE TABLE public.track
 CREATE TABLE public.points
 (
     id                          bigserial primary key,
-    track_id                   bigint,
+    track_id                    bigint,
     timestamp                   timestamp,
     location                    geometry(point) not null,
     rot                         double precision,
@@ -98,10 +98,7 @@ CREATE TABLE public.enc_cells
     edition_date date,
     update int,
     update_date date,
-    south_limit double precision,
-    west_limit double precision,
-    north_limit double precision,
-    east_limit double precision
+    location geometry(polygon) not null
 );
 
 COMMIT;
