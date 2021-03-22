@@ -4,7 +4,7 @@ from model.ais_point import AisPoint
 
 
 def space_data_preprocessing(
-    track_points: list[AisPoint], threshold_completeness=1, threshold_space=15,
+    track_points: list[AisPoint], threshold_completeness=20, threshold_space=15,
 ) -> list[list[AisPoint]]:
     """
     Takes a list of points, and returns a list of groups of points.
@@ -16,23 +16,16 @@ def space_data_preprocessing(
     :return: List of groups of points
     """
     assign_calculated_sog_if_sog_not_exists(track_points)
-    # cleaning time data
-    tracks_time = partition(track_points, threshold_space)
-    # filtering of physical integrity
-    tracks_time = [
-        subtrack for subtrack in tracks_time if len(subtrack) >= threshold_completeness
+
+    subtracks_space = partition(track_points, threshold_space)
+    tracks = association(
+        subtracks_space, threshold_space, threshold_completeness
+    )
+
+    tracks = [
+        subtrack for subtrack in tracks if len(subtrack) >= threshold_completeness
     ]
-
-    output = []
-
-    # cleaning space data
-    for subtrack in tracks_time:
-        subtracks_space = partition(subtrack, threshold_space)
-        tracks_space = association(
-            subtracks_space, threshold_space, threshold_completeness
-        )
-        output.extend(tracks_space)
-    return output
+    return tracks
 
 
 def partition(
@@ -51,10 +44,12 @@ def partition(
     break_points = []
 
     for index, point in enumerate(track_points[1:]):
-        difference_value = calc_difference_value(point, previous_track_point)
+        difference_value = calc_difference_value(previous_track_point, point)
 
-        if difference_value > threshold_space:
+        if abs(difference_value) > threshold_space:
             break_points.append(index + 1)
+
+        previous_track_point = point
 
     # Use the breakpoints to split track_points into subtracks..
     subtracks = []
@@ -80,14 +75,14 @@ def association(
     :return: List of groups of points
     """
     output = []
-    while track_points:
+    while len(track_points) != 0:
         boat = track_points.pop(0)
 
-        if track_points:
+        if len(track_points) != 0:
             for index, track in enumerate(track_points):
                 association_value = calc_difference_value(boat[-1], track[0])
 
-                if association_value < threshold_space:
+                if abs(association_value) < threshold_space:
                     boat.extend(track)
                     track_points.pop(index)
 
@@ -106,7 +101,7 @@ def calc_difference_value(a, b):
     """
     actual_speed = get_speed_between_points(a, b)
 
-    if not a.sog:
+    if a.sog is None:
         return actual_speed - a.calc_sog
     return actual_speed - a.sog
 
@@ -120,13 +115,12 @@ def assign_calculated_sog_if_sog_not_exists(points: list[AisPoint]):
     if len(points) == 0:
         return
     last_point = points[0]
-    for point in points[1:]:
+    for point in points[0:]: #todo 1
         if point.sog:
             continue
-        actual_speed = get_speed_between_points(last_point, point)
+        # actual_speed = get_speed_between_points(last_point, point) todo
 
-        point.calc_sog = min(200, actual_speed)
-
+        point.calc_sog = 20 #min(200, actual_speed)
 
 def get_speed_between_points(a, b):
     """

@@ -1,6 +1,5 @@
 export interface AisCourse{
-    mmsi: number,
-    mmsi_split: number,
+    id: number,
     timestamp_begin: Date,
     timestamp_end: Date,
     coordinates:  number[][]

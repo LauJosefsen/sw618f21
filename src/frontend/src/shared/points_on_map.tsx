@@ -30,8 +30,8 @@ export const PointsOnMap = (props: propsInterface) => {
             {props.points.map(points => {
                 return (
                     <Marker position={L.latLng(points.latitude,points.longitude)} icon={defaultIcon}>
-                        <Popup> 
-                            {points.mmsi}
+                        <Popup>
+                            {points.course_id}
                         </Popup>
                     </Marker>
                 )

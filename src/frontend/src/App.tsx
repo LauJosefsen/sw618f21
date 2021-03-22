@@ -7,6 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import {CourseOnMap} from './shared/routes_on_map';
 import {AisPoint} from './models/ais_points';
 import {useQuery} from 'react-query';
+import { PointsOnMap } from './shared/points_on_map';
+import { AisCourse } from './models/ais_course';
 
 function App() {
     const position = L.latLng(51.505, -0.09);
@@ -29,6 +31,16 @@ function App() {
         )
     )
 
+    const pointsFromRoutes = (tracks: AisCourse[]):AisPoint[] => {
+        let points: AisPoint[] = []
+        for(let track of tracks){
+            points.push.apply(track.coordinates.map((coords) => {
+                return {course_id: track.id, latitude: coords[0], longitude: coords[1]}
+            }))
+        }
+        return points;
+    }
+
     if (isLoading) return <>'Loading...'</>
 
     if (error) return <>'An error has occurred: ' + error</>
@@ -42,7 +54,8 @@ function App() {
                 <p>
                     Map
                 </p>
-                <CourseOnMap course={data}/>
+                {/* <PointsOnMap points={pointsFromRoutes(data)}/> */}
+                <CourseOnMap course={data}/>    
             </header>
         </div>
     );

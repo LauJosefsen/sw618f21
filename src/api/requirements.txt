@@ -9,3 +9,4 @@ geomet
 geopy
 tqdm
 joblib
+psutil
