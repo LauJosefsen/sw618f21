@@ -84,20 +84,15 @@ CREATE TABLE public.points
 
 CREATE INDEX track_timestamp_index ON public.points (timestamp);
 
-CREATE VIEW points_sorted AS
-SELECT *
-FROM points
-ORDER BY timestamp;
-
 CREATE TABLE public.enc_cells
 (
-    cell_name varchar(50) primary key,
-    cell_title text,
-    edition int,
+    cell_name    varchar(50) primary key,
+    cell_title   text,
+    edition      int,
     edition_date date,
-    update int,
-    update_date date,
-    location geometry(polygon) not null
+    update       int,
+    update_date  date,
+    location     geometry(polygon) not null
 );
 
 COMMIT;
