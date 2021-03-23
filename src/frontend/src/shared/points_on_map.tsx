@@ -23,7 +23,7 @@ export const PointsOnMap = (props: propsInterface) => {
         shadowUrl: defaultMarkerShadow,
     });
 
-
+    console.log(props)
 
     return (
         <MapContainer center={[56, 10]} zoom={7} scrollWheelZoom={true}>
@@ -34,12 +34,19 @@ export const PointsOnMap = (props: propsInterface) => {
 
             {props.points.map(points => {
                 return (
-                    <Marker position={L.latLng(points.latitude,points.longitude)} icon={defaultIcon}>
-                        <Popup>
-                            {points.courseId}
-                        </Popup>
-                    </Marker>
-                )
+                    <>{points.coordinates.map(
+                        (coords: number[]) => {
+                            return (
+                                        <Marker position={L.latLng(coords[0], coords[1])} icon={defaultIcon}>
+                                            <Popup>
+                                                {points.courseId}
+                                            </Popup>
+                                        </Marker>
+                                    );
+                            })
+                        }
+                    </>);
+
             })}
 
 
