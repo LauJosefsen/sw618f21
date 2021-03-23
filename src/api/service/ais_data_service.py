@@ -75,7 +75,8 @@ class AisDataService:
             cursor = connection.cursor()
             query = """INSERT INTO enc_cells(cell_name, cell_title, edition,
              edition_date, update, update_date, location)
-            values(%s, %s, %s, %s, %s, %s, ST_MakePolygon(ST_GeomFromText(%s)))"""
+            values(%s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePolygon(ST_GeomFromText(%s)), 4326))"""
+
 
             west_limit = row['west_limit']
             north_limit = row['north_limit']

@@ -43,11 +43,6 @@ export const PointsOnMap = (props: propsInterface) => {
             })}
 
 
-            <CircleMarker center={[51.51, -0.12]} pathOptions={{color: 'red'}} radius={20}>
-                  <Popup>Popup in CircleMarker</Popup>
-            </CircleMarker>
-
-
             {props.enc.map(enc => {
                 return (
                         <Rectangle bounds={[[enc.north_limit, enc.west_limit], [enc.south_limit, enc.east_limit]]} pathOptions={{color: 'red'}}>
