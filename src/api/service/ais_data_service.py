@@ -129,14 +129,14 @@ class AisDataService:
         SELECT
             t.id, MIN(p.timestamp) as timestamp_begin,
             MAX(p.timestamp) as timestamp_end, 
-            ST_AsText(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), 0.001))) as linestring
+            ST_AsText(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as linestring
         FROM public.track AS t
         JOIN public.points as p ON t.id=p.track_id
         GROUP BY t.id
         LIMIT %s OFFSET %s;
         """
 
-        cursor.execute(query, (limit, offset))
+        cursor.execute(query, (simplify_tolerance, limit, offset))
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         cursor.close()
@@ -166,7 +166,8 @@ class AisDataService:
         tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
 
-        Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
+        # Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
+        [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
         cursor.execute("""
                                           DELETE FROM ship WHERE mmsi IN 
@@ -182,7 +183,7 @@ class AisDataService:
         query = """SELECT * FROM public.ship WHERE mmsi = %s"""
         cursor.execute(query, tuple(mmsi))
         ships = cursor.fetchall()
-        if len(ships) > 0:
+        if len(ships) >  0:
             # do some magic connecting courses if they are indeed connected.
             pass  # todo
         else:
@@ -194,7 +195,7 @@ class AisDataService:
                         FROM public.data WHERE mmsi= %s AND is_processed = False LIMIT 1 RETURNING mmsi
                         """
             cursor.execute(query, tuple(mmsi))
-            ship_id = cursor.fetchall()
+            ship_id = cursor.fetchall()[0]
 
             query = """
                             SELECT mmsi, timestamp, longitude, latitude, rot,

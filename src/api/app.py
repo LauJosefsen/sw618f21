@@ -2,6 +2,10 @@ import controller.ais_data_controller
 from container import Container
 from flask import Flask
 
+import pydevd_pycharm
+
+
+
 container = Container()
 app = Flask(__name__)
 container.wire(modules=[controller.ais_data_controller])

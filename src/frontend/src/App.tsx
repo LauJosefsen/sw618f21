@@ -41,12 +41,6 @@ function App() {
         return points;
     }
 
-    if (isLoading) return <>'Loading...'</>
-
-    if (error) return <>'An error has occurred: ' + error</>
-
-    console.log(data)
-
     return (
         
         <div className="App">
@@ -54,8 +48,7 @@ function App() {
                 <p>
                     Map
                 </p>
-                {/* <PointsOnMap points={pointsFromRoutes(data)}/> */}
-                <CourseOnMap course={data}/>    
+                { isLoading ? <div className="loader"/> : error ? `An error has occurred: ${error}` : <CourseOnMap course={data}/>  }
             </header>
         </div>
     );

@@ -4,7 +4,7 @@ from model.ais_point import AisPoint
 
 
 def space_data_preprocessing(
-    track_points: list[AisPoint], threshold_completeness=20, threshold_space=15,
+    track_points: list[AisPoint], threshold_completeness=20, threshold_space=25,
 ) -> list[list[AisPoint]]:
     """
     Takes a list of points, and returns a list of groups of points.
@@ -15,7 +15,7 @@ def space_data_preprocessing(
     :param threshold_space: Maximum speed difference between points in knots to be associated.
     :return: List of groups of points
     """
-    assign_calculated_sog_if_sog_not_exists(track_points)
+    # assign_calculated_sog_if_sog_not_exists(track_points)
 
     subtracks_space = partition(track_points, threshold_space)
     tracks = association(
@@ -99,10 +99,21 @@ def calc_difference_value(a, b):
     :param b:
     :return: Difference in speed in knots
     """
+
+    if abs((b.timestamp - a.timestamp).total_seconds()) > 9000:
+        return 99999999999
+
+    distance = geopy.distance.distance(
+                    (a.location[1], a.location[0]), (b.location[1], b.location[0]),
+                ).nautical
+
+    if distance <= 0.26:
+        return 0
+
     actual_speed = get_speed_between_points(a, b)
 
     if a.sog is None:
-        return actual_speed - a.calc_sog
+        return 999999 #todo
     return actual_speed - a.sog
 
 
