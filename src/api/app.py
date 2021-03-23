@@ -2,9 +2,6 @@ import controller.ais_data_controller
 from container import Container
 from flask import Flask
 
-import pydevd_pycharm
-
-
 
 container = Container()
 app = Flask(__name__)
@@ -22,5 +19,5 @@ app.add_url_rule(
 @app.after_request  # blueprint can also be app~~
 def after_request(response):
     header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'  # todo vulnerable to xss
+    header["Access-Control-Allow-Origin"] = "*"  # todo vulnerable to xss
     return response
