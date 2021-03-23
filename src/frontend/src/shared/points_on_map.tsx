@@ -36,7 +36,7 @@ export const PointsOnMap = (props: propsInterface) => {
                 return (
                     <Marker position={L.latLng(points.latitude,points.longitude)} icon={defaultIcon}>
                         <Popup>
-                            {points.course_id}
+                            {points.courseId}
                         </Popup>
                     </Marker>
                 )
@@ -45,11 +45,11 @@ export const PointsOnMap = (props: propsInterface) => {
 
             {props.enc.map(enc => {
                 return (
-                        <Rectangle bounds={[[enc.north_limit, enc.west_limit], [enc.south_limit, enc.east_limit]]} pathOptions={{color: 'red'}}>
+                        <Rectangle bounds={[[enc.northLimit, enc.westLimit], [enc.southLimit, enc.eastLimit]]} pathOptions={{color: 'red'}}>
                             <Popup>
-                                {enc.cell_name}
+                                {enc.cellName}
                                  <br />
-                                {enc.cell_title}
+                                {enc.cellTitle}
                             </Popup>
                         </Rectangle>
                 )

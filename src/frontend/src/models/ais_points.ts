@@ -1,5 +1,5 @@
 export interface AisPoint{
-    course_id: number,
+    courseId: number,
     longitude: number,
-    latitude: number, 
+    latitude: number,
 }

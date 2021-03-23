@@ -1,6 +1,3 @@
-from datetime import datetime
-
-
 class AisPoint:
     def __init__(
         self,

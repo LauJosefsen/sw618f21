@@ -126,7 +126,7 @@ def assign_calculated_sog_if_sog_not_exists(points: list[AisPoint]):
     """
     if len(points) == 0:
         return
-    last_point = points[0]
+    # last_point = points[0]
     for point in points[0:]:  # todo 1
         if point.sog:
             continue

@@ -30,10 +30,10 @@ function App() {
             let split_location: string[] = enc_cell.location.substring(9, enc_cell.location.length - 2).replaceAll(",", " ").split(" ")
 
             // the + operator acts as typecast to int
-            enc_cell.west_limit = +split_location[0]
-            enc_cell.north_limit = +split_location[1]
-            enc_cell.east_limit = +split_location[2]
-            enc_cell.south_limit = +split_location[5]
+            enc_cell.westLimit = +split_location[0]
+            enc_cell.northLimit = +split_location[1]
+            enc_cell.eastLimit = +split_location[2]
+            enc_cell.southLimit = +split_location[5]
         });
 
         return data;

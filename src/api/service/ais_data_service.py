@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import psycopg2
 from geomet import wkt
-from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
 
@@ -44,7 +43,6 @@ class AisDataService:
 
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
-
     def import_enc_data(self):
         print("Importing enc data..")
         for entry in os.scandir("./import"):
@@ -66,7 +64,7 @@ class AisDataService:
             "south_limit",
             "west_limit",
             "north_limit",
-            "east_limit"
+            "east_limit",
         ]
 
         df = pd.read_csv(enc_fname, delimiter=",", names=colnames)
@@ -78,19 +76,25 @@ class AisDataService:
              edition_date, update, update_date, location)
             values(%s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePolygon(ST_GeomFromText(%s)), 4326))"""
 
+            west_limit = row["west_limit"]
+            north_limit = row["north_limit"]
+            east_limit = row["east_limit"]
+            south_limit = row["south_limit"]
 
-            west_limit = row['west_limit']
-            north_limit = row['north_limit']
-            east_limit = row['east_limit']
-            south_limit = row['south_limit']
+            linestring = f"LINESTRING({west_limit} {north_limit}, {east_limit} {north_limit}, {east_limit} {south_limit}, {west_limit} {south_limit}, {west_limit} {north_limit})"
 
-            linestring = f'LINESTRING({west_limit} {north_limit}, {east_limit} {north_limit}, {east_limit} {south_limit}, {west_limit} {south_limit}, {west_limit} {north_limit})'
-
-            cursor.execute(query, (row['cell_name'], row['cell_title'], self.check_if_none(row, 'edition'),
-                                   self.apply_date_if_not_none(str(row['edition_date'])),
-                                   self.check_if_none(row, 'update'), self.apply_date_if_not_none(str(row['update_date'])),
-                                   linestring
-                                   ))
+            cursor.execute(
+                query,
+                (
+                    row["cell_name"],
+                    row["cell_title"],
+                    self.check_if_none(row, "edition"),
+                    self.apply_date_if_not_none(str(row["edition_date"])),
+                    self.check_if_none(row, "update"),
+                    self.apply_date_if_not_none(str(row["update_date"])),
+                    linestring,
+                ),
+            )
 
         connection.commit()
 
@@ -103,7 +107,6 @@ class AisDataService:
             return 0
         else:
             return row[col_name]
-
 
     def apply_date_if_not_none(self, str_in):
         if str_in == "nan":
