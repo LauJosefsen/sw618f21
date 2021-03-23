@@ -88,8 +88,8 @@ class AisDataService:
             new_dfg["length"] = obj["Length"].astype(float)
             new_dfg["position_fixing_device_type"] = (
                 obj["Type of position fixing device"]
-                    .astype(str)
-                    .apply(apply_string_format)
+                .astype(str)
+                .apply(apply_string_format)
             )
             new_dfg["draught"] = obj["Draught"].astype(float)
             new_dfg["destination"] = (
@@ -103,7 +103,9 @@ class AisDataService:
             new_dfg["b"] = obj["B"].astype(float)
             new_dfg["d"] = obj["D"].astype(float)
             new_dfg["c"] = obj["C"].astype(float)
-            new_dfg["is_processed"] = pd.Series([False for _ in range(len(new_dfg["mmsi"]))], index=new_dfg.index)
+            new_dfg["is_processed"] = pd.Series(
+                [False for _ in range(len(new_dfg["mmsi"]))], index=new_dfg.index
+            )
 
             new_dfg.where(new_dfg.notnull(), None)
 
@@ -161,7 +163,7 @@ class AisDataService:
         connection = tcp.getconn()
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data WHERE is_processed =  False GROUP BY mmsi"""
+        query = """SELECT mmsi FROM public.data WHERE is_processed = False AND mmsi = 209357000 GROUP BY mmsi"""
         cursor.execute(query)
         tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
@@ -169,11 +171,12 @@ class AisDataService:
         # Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
         [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
-        cursor.execute("""
+        cursor.execute(
+            """
                                           DELETE FROM ship WHERE mmsi IN 
                                           (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
                                        """
-                       )
+        )
 
         tcp.closeall()
 
@@ -183,7 +186,7 @@ class AisDataService:
         query = """SELECT * FROM public.ship WHERE mmsi = %s"""
         cursor.execute(query, tuple(mmsi))
         ships = cursor.fetchall()
-        if len(ships) >  0:
+        if len(ships) > 0:
             # do some magic connecting courses if they are indeed connected.
             pass  # todo
         else:
@@ -206,9 +209,13 @@ class AisDataService:
                             latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
                             """
             cursor.execute(query, tuple(mmsi))
-            points = [AisPoint(**point_dict) for point_dict in
-                      [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
-                      ]
+            points = [
+                AisPoint(**point_dict)
+                for point_dict in [
+                    AisDataService.__build_dict(cursor, row)
+                    for row in cursor.fetchall()
+                ]
+            ]
 
             tracks = space_data_preprocessing(points)
 
@@ -218,7 +225,7 @@ class AisDataService:
             # mark as processed
             cursor.execute(
                 "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
-                tuple(mmsi)
+                tuple(mmsi),
             )  # todo this might mark points that were not included, as they were removed as trash.
 
         connection.commit()
@@ -226,11 +233,7 @@ class AisDataService:
 
     @staticmethod
     def __insert_tracks(ship_id, tracks, cursor):
-        tracks = [
-            track
-            for track in tracks
-            if len(track) > 0
-        ]
+        tracks = [track for track in tracks if len(track) > 0]
 
         for index, course in enumerate(tracks):
             # insert course
@@ -257,7 +260,7 @@ class AisDataService:
                         point.sog,
                         point.cog,
                         point.heading,
-                        point.position_fixing_device_type
+                        point.position_fixing_device_type,
                     ),
                 )
         pass

@@ -4,7 +4,9 @@ from model.ais_point import AisPoint
 
 
 def space_data_preprocessing(
-    track_points: list[AisPoint], threshold_completeness=20, threshold_space=25,
+    track_points: list[AisPoint],
+    threshold_completeness=20,
+    threshold_space=25,
 ) -> list[list[AisPoint]]:
     """
     Takes a list of points, and returns a list of groups of points.
@@ -18,9 +20,7 @@ def space_data_preprocessing(
     # assign_calculated_sog_if_sog_not_exists(track_points)
 
     subtracks_space = partition(track_points, threshold_space)
-    tracks = association(
-        subtracks_space, threshold_space, threshold_completeness
-    )
+    tracks = association(subtracks_space, threshold_space, threshold_completeness)
 
     tracks = [
         subtrack for subtrack in tracks if len(subtrack) >= threshold_completeness
@@ -104,8 +104,9 @@ def calc_difference_value(a, b):
         return 99999999999
 
     distance = geopy.distance.distance(
-                    (a.location[1], a.location[0]), (b.location[1], b.location[0]),
-                ).nautical
+        (a.location[1], a.location[0]),
+        (b.location[1], b.location[0]),
+    ).nautical
 
     if distance <= 0.26:
         return 0
@@ -113,7 +114,7 @@ def calc_difference_value(a, b):
     actual_speed = get_speed_between_points(a, b)
 
     if a.sog is None:
-        return 999999 #todo
+        return 999999  # todo
     return actual_speed - a.sog
 
 
@@ -126,12 +127,13 @@ def assign_calculated_sog_if_sog_not_exists(points: list[AisPoint]):
     if len(points) == 0:
         return
     last_point = points[0]
-    for point in points[0:]: #todo 1
+    for point in points[0:]:  # todo 1
         if point.sog:
             continue
         # actual_speed = get_speed_between_points(last_point, point) todo
 
-        point.calc_sog = 20 #min(200, actual_speed)
+        point.calc_sog = 20  # min(200, actual_speed)
+
 
 def get_speed_between_points(a, b):
     """
@@ -141,7 +143,8 @@ def get_speed_between_points(a, b):
     :return: Speed in knots
     """
     distance = geopy.distance.distance(
-        (a.location[1], a.location[0]), (b.location[1], b.location[0]),
+        (a.location[1], a.location[0]),
+        (b.location[1], b.location[0]),
     ).nautical
     time_distance = (b.timestamp - a.timestamp).total_seconds() / 3600.0
     if time_distance == 0:
