@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 from geomet import wkt
+from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
 
@@ -163,8 +164,8 @@ class AisDataService:
             new_dfg["length"] = obj["Length"].astype(float)
             new_dfg["position_fixing_device_type"] = (
                 obj["Type of position fixing device"]
-                    .astype(str)
-                    .apply(apply_string_format)
+                .astype(str)
+                .apply(apply_string_format)
             )
             new_dfg["draught"] = obj["Draught"].astype(float)
             new_dfg["destination"] = (
@@ -178,7 +179,9 @@ class AisDataService:
             new_dfg["b"] = obj["B"].astype(float)
             new_dfg["d"] = obj["D"].astype(float)
             new_dfg["c"] = obj["C"].astype(float)
-            new_dfg["is_processed"] = pd.Series([False for _ in range(len(new_dfg["mmsi"]))], index=new_dfg.index)
+            new_dfg["is_processed"] = pd.Series(
+                [False for _ in range(len(new_dfg["mmsi"]))], index=new_dfg.index
+            )
 
             new_dfg.where(new_dfg.notnull(), None)
 
@@ -203,88 +206,30 @@ class AisDataService:
         query = """
         SELECT
             t.id, MIN(p.timestamp) as timestamp_begin,
-            MAX(p.timestamp) as timestamp_end, ST_AsText(ST_FlipCoordinates(ST_MakeLine(p.location))) as linestring
+            MAX(p.timestamp) as timestamp_end, 
+            ST_AsText(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as linestring
         FROM public.track AS t
-        JOIN public.points_sorted as p ON t.id=p.track_id
+        JOIN public.points as p ON t.id=p.track_id
         GROUP BY t.id
         LIMIT %s OFFSET %s;
         """
 
-        cursor.execute(query, (limit, offset))
+        cursor.execute(query, (simplify_tolerance, limit, offset))
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         cursor.close()
         connection.close()
 
-        for row in data:
-            row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
-            row.pop("linestring")
+        for index, row in enumerate(data):
+
+            try:
+                row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
+                row.pop("linestring")
+            except ValueError:
+                row["coordinates"] = []
+                row.pop("linestring")
 
         return data
-
-    # def cluster_points(self):
-    #     print("Cluster begin!")
-    #     connection = psycopg2.connect(dsn=self.dsn)
-    #     cursor = connection.cursor()
-    #     cursor.execute("START TRANSACTION;")
-    #     query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
-    #     cursor.execute(query)
-    #     mmsi_list = cursor.fetchall()
-    #
-    #     print("Loop begin!")
-    #
-    #     for mmsi in tqdm.tqdm(mmsi_list):
-    #         mmsi = mmsi[0]
-    #         query = """
-    #         SELECT mmsi, timestamp, longitude, latitude, rot, sog, cog, heading FROM public.data
-    #         WHERE mmsi = %s AND
-    #         (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
-    #         longitude <= 180 AND longitude >=-180 AND
-    #         latitude <= 90 AND latitude >= -90 ORDER BY timestamp
-    #         """
-    #         cursor.execute(query, tuple([str(mmsi)]))
-    #         mmsi_points = [
-    #             AisDataEntry(**AisDataService.__build_dict(cursor, row))
-    #             for row in cursor.fetchall()
-    #         ]
-    #
-    #         ais_courses = [
-    #             ais_course
-    #             for ais_course in space_data_preprocessing(mmsi_points)
-    #             if len(ais_course) > 0
-    #         ]
-    #
-    #         for index, course in enumerate(ais_courses):
-    #             # insert course
-    #             query = """
-    #                 INSERT INTO public.ais_course (mmsi,mmsi_split) VALUES (%s, %s);
-    #             """
-    #             cursor.execute(query, (mmsi, index))
-    #
-    #             # insert points
-    #             for point in course:
-    #                 query = """
-    #                     INSERT INTO public.ais_points
-    #                     (mmsi, mmsi_split, timestamp, location, rot, sog, cog, heading)
-    #                          VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s)"""
-    #                 cursor.execute(
-    #                     query,
-    #                     (
-    #                         point.mmsi,
-    #                         index,
-    #                         point.timestamp,
-    #                         point.longitude,
-    #                         point.latitude,
-    #                         point.rot,
-    #                         point.sog,
-    #                         point.cog,
-    #                         point.heading,
-    #                     ),
-    #                 )
-    #     connection.commit()
-    #
-    #     cursor.close()
-    #     connection.close()
 
     def new_cluster(self):
 
@@ -294,31 +239,46 @@ class AisDataService:
         connection = tcp.getconn()
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data WHERE is_processed =  False GROUP BY mmsi"""
+        query = (
+            """SELECT mmsi FROM public.data WHERE is_processed =  False GROUP BY mmsi"""
+        )
         cursor.execute(query)
+        tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
 
-        # For each of these MMSI:
-        for mmsi in mmsi_list:
-            query = """SELECT * FROM public.ship WHERE mmsi = %s"""
-            cursor.execute(query, tuple(mmsi))
-            ships = cursor.fetchall()
+        # Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
+        [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
-            if len(ships) > 0:
-                # do some magic connecting courses if they are indeed connected.
-                pass  # todo
-            else:
-                # make a new ship, and cluster as normal
-                query = """
+        cursor.execute(
+            """
+                                          DELETE FROM ship WHERE mmsi IN 
+                                          (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
+                                       """
+        )
+
+        tcp.closeall()
+
+    def cluster_mmsi(self, mmsi):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """SELECT * FROM public.ship WHERE mmsi = %s"""
+        cursor.execute(query, tuple(mmsi))
+        ships = cursor.fetchall()
+        if len(ships) > 0:
+            # do some magic connecting courses if they are indeed connected.
+            pass  # todo
+        else:
+            # make a new ship, and cluster as normal
+            query = """
                         INSERT INTO public.ship
                         (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
                         SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
-                        FROM public.data WHERE mmsi= %s AND is_processed = False LIMIT 1 RETURNING id
+                        FROM public.data WHERE mmsi= %s AND is_processed = False LIMIT 1 RETURNING mmsi
                         """
-                cursor.execute(query, tuple(mmsi))
-                ship_id = cursor.fetchall()
+            cursor.execute(query, tuple(mmsi))
+            ship_id = cursor.fetchall()[0]
 
-                query = """
+            query = """
                             SELECT mmsi, timestamp, longitude, latitude, rot,
                              sog, cog, heading, position_fixing_device_type FROM public.data 
                             WHERE mmsi = %s AND 
@@ -326,42 +286,37 @@ class AisDataService:
                             longitude <= 180 AND longitude >=-180 AND
                             latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
                             """
-                cursor.execute(query, tuple(mmsi))
-                points = [AisPoint(**point_dict) for point_dict in
-                          [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
-                          ]
+            cursor.execute(query, tuple(mmsi))
+            points = [
+                AisPoint(**point_dict)
+                for point_dict in [
+                    AisDataService.__build_dict(cursor, row)
+                    for row in cursor.fetchall()
+                ]
+            ]
 
-                tracks = space_data_preprocessing(points)
+            tracks = space_data_preprocessing(points)
 
-                # insert tracks and points:
-                self.__insert_tracks(ship_id, tracks, cursor)
+            # insert tracks and points:
+            self.__insert_tracks(ship_id, tracks, cursor)
 
-                # mark as processed
-                cursor.execute(
-                    "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
-                    tuple(mmsi)
-                )  # todo this might mark points that were not included, as they were removed as trash.
+            # mark as processed
+            cursor.execute(
+                "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
+                tuple(mmsi),
+            )  # todo this might mark points that were not included, as they were removed as trash.
 
-                cursor.execute("""
-                                  DELETE FROM ship WHERE id IN 
-                                  (SELECT id FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_id = s.id) = 0)
-                               """
-                               )
-
-            connection.commit()
+        connection.commit()
+        connection.close()
 
     @staticmethod
     def __insert_tracks(ship_id, tracks, cursor):
-        tracks = [
-            track
-            for track in tracks
-            if len(track) > 0
-        ]
+        tracks = [track for track in tracks if len(track) > 0]
 
         for index, course in enumerate(tracks):
             # insert course
             query = """
-                            INSERT INTO public.track (ship_id) VALUES (%s) RETURNING id;
+                            INSERT INTO public.track (ship_mmsi) VALUES (%s) RETURNING id;
                         """
             cursor.execute(query, tuple(ship_id))
             track_id = cursor.fetchall()[0]
@@ -383,7 +338,7 @@ class AisDataService:
                         point.sog,
                         point.cog,
                         point.heading,
-                        point.position_fixing_device_type
+                        point.position_fixing_device_type,
                     ),
                 )
         pass

@@ -9,3 +9,5 @@ geomet
 geopy
 tqdm
 joblib
+psutil
+pydevd-pycharm~=203.7717.65

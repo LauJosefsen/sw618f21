@@ -2,6 +2,7 @@ import controller.ais_data_controller
 from container import Container
 from flask import Flask
 
+
 container = Container()
 app = Flask(__name__)
 container.wire(modules=[controller.ais_data_controller])
@@ -21,5 +22,5 @@ app.add_url_rule(
 @app.after_request  # blueprint can also be app~~
 def after_request(response):
     header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'  # todo vulnerable to xss
+    header["Access-Control-Allow-Origin"] = "*"  # todo vulnerable to xss
     return response
