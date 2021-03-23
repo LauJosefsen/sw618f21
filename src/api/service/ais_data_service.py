@@ -81,7 +81,10 @@ class AisDataService:
             east_limit = row["east_limit"]
             south_limit = row["south_limit"]
 
-            linestring = f"LINESTRING({west_limit} {north_limit}, {east_limit} {north_limit}, {east_limit} {south_limit}, {west_limit} {south_limit}, {west_limit} {north_limit})"
+            linestring = (
+                f"LINESTRING({west_limit} {north_limit}, {east_limit} {north_limit}, {east_limit} {south_limit}, "
+                f"{west_limit} {south_limit}, {west_limit} {north_limit})"
+            )
 
             cursor.execute(
                 query,
@@ -254,9 +257,9 @@ class AisDataService:
 
         cursor.execute(
             """
-                                          DELETE FROM ship WHERE mmsi IN 
-                                          (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
-                                       """
+                DELETE FROM ship WHERE mmsi IN 
+                (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
+            """
         )
 
         tcp.closeall()
@@ -282,13 +285,13 @@ class AisDataService:
             ship_id = cursor.fetchall()[0]
 
             query = """
-                            SELECT mmsi, timestamp, longitude, latitude, rot,
-                             sog, cog, heading, position_fixing_device_type FROM public.data 
-                            WHERE mmsi = %s AND 
-                            (mobile_type = 'Class A' OR mobile_type = 'Class B') AND 
-                            longitude <= 180 AND longitude >=-180 AND
-                            latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
-                            """
+                        SELECT mmsi, timestamp, longitude, latitude, rot,
+                        sog, cog, heading, position_fixing_device_type FROM public.data 
+                        WHERE mmsi = %s AND 
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B') AND 
+                        longitude <= 180 AND longitude >=-180 AND
+                        latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
+                    """
             cursor.execute(query, tuple(mmsi))
             points = [
                 AisPoint(**point_dict)
