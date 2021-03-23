@@ -212,7 +212,7 @@ class AisDataService:
         query = """
         SELECT
             t.id, MIN(p.timestamp) as timestamp_begin,
-            MAX(p.timestamp) as timestamp_end, 
+            MAX(p.timestamp) as timestamp_end,
             ST_AsText(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as linestring
         FROM public.track AS t
         JOIN public.points as p ON t.id=p.track_id
@@ -257,7 +257,7 @@ class AisDataService:
 
         cursor.execute(
             """
-                DELETE FROM ship WHERE mmsi IN 
+                DELETE FROM ship WHERE mmsi IN
                 (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
             """
         )
@@ -286,9 +286,9 @@ class AisDataService:
 
             query = """
                         SELECT mmsi, timestamp, longitude, latitude, rot,
-                        sog, cog, heading, position_fixing_device_type FROM public.data 
-                        WHERE mmsi = %s AND 
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B') AND 
+                        sog, cog, heading, position_fixing_device_type FROM public.data
+                        WHERE mmsi = %s AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
                         longitude <= 180 AND longitude >=-180 AND
                         latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
                     """
