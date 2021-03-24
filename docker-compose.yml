@@ -41,7 +41,7 @@ services:
     build: ./src/frontend
     environment:
       CHOKIDAR_USEPOLLING: "true"
-    volumes: ['./src/frontend:/frontend']
+    volumes: ['./src/frontend/src:/frontend/src']
     ports:
       - "3000:3000"
 

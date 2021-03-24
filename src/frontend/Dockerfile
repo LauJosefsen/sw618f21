@@ -2,18 +2,15 @@
 FROM node:15.8.0-alpine
 
 # set working directory
-WORKDIR /src/visual
-
-# add `/app/node_modules/.bin` to $PATH
-ENV PATH /src/frontend/node_modules/.bin:$PATH
+WORKDIR /frontend
 
 # install app dependencies
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig.json ./
+COPY public ./public/
 RUN npm install --silent
-RUN npm install react-scripts@4.0.2 -g --silent
-
-WORKDIR /frontend
+RUN npm install react-scripts@4.0.3 -g --silent
 
 # start app
 CMD ["npm", "start"]
