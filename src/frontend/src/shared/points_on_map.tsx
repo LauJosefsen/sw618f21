@@ -54,9 +54,10 @@ export const PointsOnMap = (props: propsInterface) => {
                 return (
                         <Rectangle bounds={[[enc.northLimit, enc.westLimit], [enc.southLimit, enc.eastLimit]]} pathOptions={{color: 'red'}}>
                             <Popup>
-                                {enc.cellName}
+                                Cell Information:
+                                {enc.cell_name}
                                  <br />
-                                {enc.cellTitle}
+                                {enc.cell_title}
                             </Popup>
                         </Rectangle>
                 )

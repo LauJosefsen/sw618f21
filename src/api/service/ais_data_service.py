@@ -34,7 +34,7 @@ class AisDataService:
 
         return [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
-    def fetch_specific_limit(self, col_names, table_name, limit, offset=0):
+    def fetch_specific_limit(self, col_names, table_name, limit, offset):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         query = "SELECT %s FROM public.%s LIMIT %s OFFSET %s;"
@@ -72,9 +72,8 @@ class AisDataService:
 
         for index, row in df.iterrows():
             cursor = connection.cursor()
-            query = """INSERT INTO enc_cells(cell_name, cell_title, edition,
-             edition_date, update, update_date, location)
-            values(%s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePolygon(ST_GeomFromText(%s)), 4326))"""
+            query = """INSERT INTO enc_cells(cell_name, cell_title, location)
+            values(%s, %s, ST_SetSRID(ST_MakePolygon(ST_GeomFromText(%s)), 4326))"""
 
             west_limit = row["west_limit"]
             north_limit = row["north_limit"]
@@ -91,10 +90,6 @@ class AisDataService:
                 (
                     row["cell_name"],
                     row["cell_title"],
-                    self.check_if_none(row, "edition"),
-                    self.apply_date_if_not_none(str(row["edition_date"])),
-                    self.check_if_none(row, "update"),
-                    self.apply_date_if_not_none(str(row["update_date"])),
                     linestring,
                 ),
             )

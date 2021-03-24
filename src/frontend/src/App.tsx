@@ -46,9 +46,10 @@ function App() {
         ));
 
     const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery('repoENCData', () =>
-        fetch('http://localhost:5000/get_enc_cells?limit=20000').then(res =>
+        fetch('http://localhost:5000/get_enc_cells?limit=1').then(res =>
             res.json()
         ));
+
 
 
     if (loading_point || loading_enc) return <>'Loading...'</>
@@ -57,6 +58,7 @@ function App() {
 
     console.log(data_point)
     console.log(data_enc)
+    console.log("type: ", data_enc.type)
 
 
     return (
