@@ -1,13 +1,13 @@
 export interface EncCell{
-    cell_name: string,
-    cell_title: string,
+    cellName: string,
+    cellTitle: string,
     edition: number,
-    edition_date: Date,
+    editionDate: Date,
     update: number,
-    update_date: Date,
+    updateDate: Date,
     location: string,
-    south_limit: number,
-    west_limit: number,
-    north_limit: number,
-    east_limit: number
+    southLimit: number,
+    westLimit: number,
+    northLimit: number,
+    eastLimit: number
 }

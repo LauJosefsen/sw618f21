@@ -1,5 +1,4 @@
 export interface AisPoint{
-    mmsi: string,
-    longitude: number,
-    latitude: number, 
+    courseId: number,
+    coordinates: number[][],
 }

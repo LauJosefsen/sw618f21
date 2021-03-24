@@ -23,7 +23,7 @@ export const PointsOnMap = (props: propsInterface) => {
         shadowUrl: defaultMarkerShadow,
     });
 
-
+    console.log(props)
 
     return (
         <MapContainer center={[56, 10]} zoom={7} scrollWheelZoom={true}>
@@ -34,27 +34,29 @@ export const PointsOnMap = (props: propsInterface) => {
 
             {props.points.map(points => {
                 return (
-                    <Marker position={L.latLng(points.latitude,points.longitude)} icon={defaultIcon}>
-                        <Popup> 
-                            {points.mmsi}
-                        </Popup>
-                    </Marker>
-                )
+                    <>{points.coordinates.map(
+                        (coords: number[]) => {
+                            return (
+                                        <Marker position={L.latLng(coords[0], coords[1])} icon={defaultIcon}>
+                                            <Popup>
+                                                {points.courseId}
+                                            </Popup>
+                                        </Marker>
+                                    );
+                            })
+                        }
+                    </>);
+
             })}
-
-
-            <CircleMarker center={[51.51, -0.12]} pathOptions={{color: 'red'}} radius={20}>
-                  <Popup>Popup in CircleMarker</Popup>
-            </CircleMarker>
 
 
             {props.enc.map(enc => {
                 return (
-                        <Rectangle bounds={[[enc.north_limit, enc.west_limit], [enc.south_limit, enc.east_limit]]} pathOptions={{color: 'red'}}>
+                        <Rectangle bounds={[[enc.northLimit, enc.westLimit], [enc.southLimit, enc.eastLimit]]} pathOptions={{color: 'red'}}>
                             <Popup>
-                                {enc.cell_name}
+                                {enc.cellName}
                                  <br />
-                                {enc.cell_title}
+                                {enc.cellTitle}
                             </Popup>
                         </Rectangle>
                 )

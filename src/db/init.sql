@@ -41,8 +41,7 @@ CREATE INDEX mmsi_index ON public.data (MMSI);
 
 CREATE TABLE public.ship
 (
-    id          bigserial primary key,
-    MMSI        int,
+    MMSI        int PRIMARY KEY,
     IMO         varchar(10),
     mobile_type varchar(50),
     callsign    varchar(10),
@@ -60,12 +59,12 @@ CREATE TABLE public.ship
 CREATE TABLE public.track
 (
     id          bigserial primary key,
-    ship_id     bigint,
+    ship_mmsi   int,
     destination varchar(100),
     cargo_type  varchar(50),
     eta         timestamp,
     CONSTRAINT fk_track_ship
-        FOREIGN KEY (ship_id) REFERENCES public.ship (id)
+        FOREIGN KEY (ship_mmsi) REFERENCES public.ship (mmsi)
 );
 
 CREATE TABLE public.points
@@ -85,20 +84,15 @@ CREATE TABLE public.points
 
 CREATE INDEX track_timestamp_index ON public.points (timestamp);
 
-CREATE VIEW points_sorted AS
-SELECT *
-FROM points
-ORDER BY timestamp;
-
 CREATE TABLE public.enc_cells
 (
-    cell_name varchar(50) primary key,
-    cell_title text,
-    edition int,
+    cell_name    varchar(50) primary key,
+    cell_title   text,
+    edition      int,
     edition_date date,
-    update int,
-    update_date date,
-    location geometry(polygon) not null
+    update       int,
+    update_date  date,
+    location     geometry(polygon) not null
 );
 
 COMMIT;
