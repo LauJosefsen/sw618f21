@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   postgresql-client=11+200+deb10u4 \
   && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install pip==20.3.4
+RUN pip3 install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 CMD ["sh", "./start.sh"]
