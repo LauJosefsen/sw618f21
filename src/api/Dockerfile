@@ -6,7 +6,7 @@ ENV FLASK_RUN_HOST=0.0.0.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
   gcc=4:8.3.0-1 \
   musl-dev=1.1.21-2 \
-  libpq-dev=11.10-0+deb10u1 \
+  libpq-dev=11.11-0+deb10u1 \
   postgresql-client=11+200+deb10u4 \
   && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt requirements.txt

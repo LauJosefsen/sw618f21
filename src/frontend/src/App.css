@@ -7,15 +7,12 @@
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .leaflet-container {
-  width: 70vw;
-  height: 70vh;
+  position:fixed;
+  width:100%;
+  height:100%;
+  top:0px;
+  left:0px;
 }
 
 .App-header {
@@ -28,6 +25,14 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+
+.sidebar-button{
+  position:absolute;
+  z-index:4;
+  bottom: 2em;
+  left: 2em;
+}
+
 
 .App-link {
   color: #61dafb;
