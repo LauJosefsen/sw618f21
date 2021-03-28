@@ -52,7 +52,7 @@ def get_enc_cells(
     offset = request.args.get("offset", default=0, type=int)
     return jsonify(
         ais_data_service.fetch_specific_limit(
-            "cell_name, cell_title, edition, edition_date, update, update_date,"
+            "cell_name, cell_title,"
             " ST_AsText(public.enc_cells.location) as location",
             "enc_cells",
             limit,
