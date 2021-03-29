@@ -1,7 +1,9 @@
-export interface EncCell{
+import { GeoJsonLocation } from "./location";
+
+export interface EncCell{ 
     cell_name: string,
     cell_title: string,
-    location: string,
+    location: GeoJsonLocation,
     southLimit: number,
     westLimit: number,
     northLimit: number,

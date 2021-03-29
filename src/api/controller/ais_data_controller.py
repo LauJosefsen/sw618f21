@@ -1,3 +1,5 @@
+import json
+
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
@@ -50,12 +52,13 @@ def get_enc_cells(
 ):
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
-    return jsonify(
-        ais_data_service.fetch_specific_limit(
-            "cell_name, cell_title,"
-            " ST_AsText(public.enc_cells.location) as location",
-            "enc_cells",
-            limit,
-            offset,
-        )
+
+    objs = ais_data_service.fetch_specific_limit(
+        "cell_name, cell_title," " ST_AsGeoJson(public.enc_cells.location) as location",
+        "enc_cells",
+        limit,
+        offset,
     )
+    for obj in objs:
+        obj["location"] = json.loads(obj["location"])
+    return jsonify(objs)

@@ -12,6 +12,7 @@ function App() {
 
     const [local_settings, setSettings] = useState<settings>(
         {
+            encSearch: "",
             showEnc: true,
             encOffset: 0,
             encLimit: 5,
@@ -38,7 +39,7 @@ function App() {
                         <SettingsContext.Consumer>
                             {({ settings }) => (
                                 <>
-                                    {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} /> : ""}
+                                    {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ""}
                                 </>
                             )}
                         </SettingsContext.Consumer>
