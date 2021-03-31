@@ -62,3 +62,11 @@ def get_enc_cells(
     for obj in objs:
         obj["location"] = json.loads(obj["location"])
     return jsonify(objs)
+
+
+# TODO This is WIP and we are currently testing on pgadmin
+@inject
+def cluster_heatmap(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    objs = ais_data_service.make_heatmap(0.05, 50)

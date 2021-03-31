@@ -7,6 +7,7 @@ import { MapEncCells } from './shared/map/enc_cells';
 import { MapTrack } from './shared/map/track';
 import { settings, SettingsContext, settings_with_setter } from './providers/settings_provider';
 import { useEffect, useState } from 'react';
+import {HeatMap} from "./heatmap";
 
 function App() {
 
@@ -43,6 +44,7 @@ function App() {
                                 </>
                             )}
                         </SettingsContext.Consumer>
+                        <HeatMap data={[[57,11,100]]}/>
                         <MapTrack />
                     </MapContainer>
                 </header>

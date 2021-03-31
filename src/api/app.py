@@ -22,6 +22,10 @@ app.add_url_rule(
     "/cluster-points", "cluster_points", controller.ais_data_controller.cluster_points
 )
 
+app.add_url_rule(
+    "/cluster-heatmap", "cluster_heatmap", controller.ais_data_controller.cluster_heatmap
+)
+
 
 @app.after_request  # blueprint can also be app~~
 def after_request(response):

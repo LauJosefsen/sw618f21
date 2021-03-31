@@ -343,3 +343,11 @@ class AisDataService:
                     ),
                 )
         pass
+
+    def make_heatmap(self, eps, minpoints):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """
+                        SELECT name, ST_ClusterDBSCAN(geom, eps := %s, minpoints := %s)
+                """
+        cursor.execute(query, eps, minpoints)
