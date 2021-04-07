@@ -3,11 +3,12 @@ redis
 pytest
 psycopg2-binary
 dependency-injector
-pandas
 d6tstack
 geomet
 geopy
 tqdm
 joblib
 psutil
-pydevd-pycharm~=203.7717.65
+pyproj
+shapely
+yappi

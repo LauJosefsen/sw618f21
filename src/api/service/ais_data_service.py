@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 from geomet import wkt
+from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
 
@@ -21,9 +23,11 @@ class AisDataService:
     __host = "db"
 
     # used for psycopg2
-    dsn = f"dbname={__database} user={__user} password={__pasword} host={__host}"
+    dsn = f"dbname={__database} user={__user} password={__pasword} host={__host} port={__port}"
     # used for d6tstack utilities when importing csv files.
-    cfg_uri_psql = f"postgresql+psycopg2://{__user}:{__pasword}@{__host}/{__database}"
+    cfg_uri_psql = (
+        f"postgresql+psycopg2://{__user}:{__pasword}@{__host}:{__port}/{__database}"
+    )
 
     def fetch_all_limit(self, table_name, limit, offset=0):
         connection = psycopg2.connect(dsn=self.dsn)
@@ -201,34 +205,39 @@ class AisDataService:
             x[col[0]] = row[key]
         return x
 
-    def get_routes(self, limit, offset, simplify_tolerance=0):
+    def get_tracks(self, limit, offset, simplify_tolerance=0, search_mmsi=None):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
+
+        # Test
+        query = """
+                    
+                SELECT mmsi FROM ship 
+            """
+
+        #end test
+
         query = """
         SELECT
-            t.id, MIN(p.timestamp) as timestamp_begin,
+            t.id, t.ship_mmsi as mmsi, MIN(p.timestamp) as timestamp_begin,
             MAX(p.timestamp) as timestamp_end,
-            ST_AsText(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as linestring
+            ST_AsGeoJson(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as coordinates
         FROM public.track AS t
         JOIN public.points as p ON t.id=p.track_id
-        GROUP BY t.id
+        WHERE t.ship_mmsi IN (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) > 1)
+        AND (%s OR t.ship_mmsi = %s)
+        GROUP BY t.id, t.ship_mmsi
         LIMIT %s OFFSET %s;
         """
 
-        cursor.execute(query, (simplify_tolerance, limit, offset))
+        cursor.execute(query, (simplify_tolerance, True if search_mmsi is None else False, search_mmsi, limit, offset))
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         cursor.close()
         connection.close()
 
-        for index, row in enumerate(data):
-
-            try:
-                row["coordinates"] = wkt.loads(row["linestring"])["coordinates"]
-                row.pop("linestring")
-            except ValueError:
-                row["coordinates"] = []
-                row.pop("linestring")
+        for row in data:
+            row["coordinates"] = json.loads(row["coordinates"])["coordinates"]
 
         return data
 
@@ -247,8 +256,8 @@ class AisDataService:
         tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
 
-        # Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
-        [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
+        Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
+        # [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
         cursor.execute(
             """
@@ -274,7 +283,7 @@ class AisDataService:
                         INSERT INTO public.ship
                         (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
                         SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
-                        FROM public.data WHERE mmsi= %s AND is_processed = False LIMIT 1 RETURNING mmsi
+                        FROM public.data WHERE mmsi= %s LIMIT 1 RETURNING mmsi
                         """
             cursor.execute(query, tuple(mmsi))
             ship_id = cursor.fetchall()[0]
@@ -285,7 +294,7 @@ class AisDataService:
                         WHERE mmsi = %s AND
                         (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
                         longitude <= 180 AND longitude >=-180 AND
-                        latitude <= 90 AND latitude >= -90 AND is_processed = False ORDER BY timestamp
+                        latitude <= 90 AND latitude >= -90 ORDER BY timestamp
                     """
             cursor.execute(query, tuple(mmsi))
             points = [
@@ -302,10 +311,10 @@ class AisDataService:
             self.__insert_tracks(ship_id, tracks, cursor)
 
             # mark as processed
-            cursor.execute(
-                "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
-                tuple(mmsi),
-            )  # todo this might mark points that were not included, as they were removed as trash.
+            # cursor.execute(
+            #     "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
+            #     tuple(mmsi),
+            # )  # todo this might mark points that were not included, as they were removed as trash.
 
         connection.commit()
         connection.close()

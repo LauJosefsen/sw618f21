@@ -86,10 +86,10 @@ CREATE INDEX track_timestamp_index ON public.points (timestamp);
 
 CREATE TABLE public.enc_cells
 (
-    cell_id      serial primary key,
-    cell_name    varchar(50),
-    cell_title   text,
-    location     geometry not null
+    cell_id    serial primary key,
+    cell_name  varchar(50),
+    cell_title text,
+    location   geometry not null
 );
 
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Øer Havn', '01030000000100000005000000C01FAFEEF5592540D01F683FB1124C40C01FAFEEF5592540F02C738001144C406066666666662540F02C738001144C406066666666662540D01F683FB1124C40C01FAFEEF5592540D01F683FB1124C40', NULL);

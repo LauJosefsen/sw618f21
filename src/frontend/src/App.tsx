@@ -1,26 +1,28 @@
 import './App.css';
 import * as L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { CustomSidebar } from './shared/sidebar';
 import { MapEncCells } from './shared/map/enc_cells';
 import { MapTrack } from './shared/map/track';
+import { MapPoints } from './shared/map/points';
 import { settings, SettingsContext, settings_with_setter } from './providers/settings_provider';
-import { useEffect, useState } from 'react';
-import {HeatMap} from "./heatmap";
+import React, { useEffect, useState } from 'react';
+import { HeatMap } from "./heatmap";
 
 function App() {
 
     const [local_settings, setSettings] = useState<settings>(
         {
             encSearch: "",
-            showEnc: true,
+            showEnc: false,
             encOffset: 0,
             encLimit: 5,
             showTrack: true,
             trackOffset: 0,
-            trackLimit: 0,
-            search_filters: []
+            trackLimit: 5,
+            trackSearch: ""
 
         }
     )
@@ -37,15 +39,21 @@ function App() {
                             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
+                        {/* <TileLayer
+                            url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+                            attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+                        /> */}
                         <SettingsContext.Consumer>
                             {({ settings }) => (
                                 <>
                                     {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ""}
+                                    {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ""}
                                 </>
                             )}
+
                         </SettingsContext.Consumer>
-                        <HeatMap data={[[57,11,100]]}/>
-                        <MapTrack />
+                        <MapPoints></MapPoints>
+                        <HeatMap data={[[57, 11, 100]]} />
                     </MapContainer>
                 </header>
             </SettingsContext.Provider>

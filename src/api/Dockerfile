@@ -1,5 +1,4 @@
-FROM python:3.9-slim
-#FROM pypy:3.7-buster
+FROM python:3.9
 WORKDIR /api
 ENV FLASK_APP=./app.py
 ENV FLASK_DEBUG=1
@@ -11,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   postgresql-client=11+200+deb10u4 \
   && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt requirements.txt
-RUN pip3 install pip==20.3.4
+RUN pip3 install pip==21.0.1
 RUN pip3 install --no-cache-dir -r requirements.txt
 EXPOSE 5000
-CMD ["sh", "./start.sh"]
+CMD ["python3", "-m", "flask", "run"]

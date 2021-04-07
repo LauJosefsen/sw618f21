@@ -1,7 +1,22 @@
 import controller.ais_data_controller
 from container import Container
-from flask import Flask
+from flask import Flask, request
+from datetime import datetime
+import yappi
+import atexit
 
+
+# End profiling and save the results into file
+def output_profiler_stats_file():
+    profile_file_name = 'yappi.' + datetime.now().isoformat().replace(':', '.')+".pstat"
+    func_stats = yappi.get_func_stats()
+    func_stats.save(profile_file_name, type='pstat')
+    yappi.stop()
+    yappi.clear_stats()
+
+
+yappi.start()
+atexit.register(output_profiler_stats_file)
 
 container = Container()
 app = Flask(__name__)
@@ -10,7 +25,7 @@ app.container = container
 
 app.add_url_rule("/", "index", controller.ais_data_controller.index)
 app.add_url_rule("/import", "import", controller.ais_data_controller.import_ais_data)
-app.add_url_rule("/routes", "get_routes", controller.ais_data_controller.get_routes)
+app.add_url_rule("/tracks", "get_routes", controller.ais_data_controller.get_tracks)
 app.add_url_rule(
     "/import_enc", "import_enc", controller.ais_data_controller.import_enc_data
 )
@@ -23,8 +38,23 @@ app.add_url_rule(
 )
 
 app.add_url_rule(
-    "/cluster-heatmap", "cluster_heatmap", controller.ais_data_controller.cluster_heatmap
+    "/cluster-heatmap",
+    "cluster_heatmap",
+    controller.ais_data_controller.cluster_heatmap,
 )
+
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+
+
+@app.route('/shutdown', methods=['GET'])
+def shutdown():
+    shutdown_server()
+    return 'Server shutting down...'
 
 
 @app.after_request  # blueprint can also be app~~

@@ -8,15 +8,15 @@ services:
     volumes: ['./src/api:/api']
     environment:
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - db
-    links:
-      - "db:db"
-  db:
-    container_name: db
-    build: ./src/db
-    ports:
-      - "5432:5432"
+#    depends_on:
+#      - db
+#    links:
+#      - "db:db"
+#  db:
+#    container_name: db
+#    build: ./src/db
+#    ports:
+#      - "5432:5432"
 #  dash:
 #    container_name: dash
 #    build: ./src/dash
@@ -27,15 +27,15 @@ services:
 #    volumes: ['./src/dash:/dash']
 #    environment:
 #      - PYTHONUNBUFFERED=1
-  pgadmin:
-    container_name: pg_admin
-    build: ./src/pgadmin
-    ports:
-    - "8080:80"
-    volumes:
-    - pgadmin-data:/var/lib/pgadmin
-    links:
-    - "db:pgsql-server"
+#  pgadmin:
+#    container_name: pg_admin
+#    build: ./src/pgadmin
+#    ports:
+#    - "8080:80"
+#    volumes:
+#    - pgadmin-data:/var/lib/pgadmin
+#    links:
+#    - "db:pgsql-server"
   react:
     container_name: react
     build: ./src/frontend
@@ -44,7 +44,3 @@ services:
     volumes: ['./src/frontend/src:/frontend/src', './src/frontend/public:/frontend/public']
     ports:
       - "3000:3000"
-
-volumes:
-  db-data:
-  pgadmin-data:

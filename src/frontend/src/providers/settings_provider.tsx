@@ -12,7 +12,7 @@ export interface settings {
     showTrack: boolean
     trackOffset: number;
     trackLimit: number;
-    search_filters: any;
+    trackSearch: string;
 }
 
 export interface settings_with_setter {
@@ -33,7 +33,7 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         showTrack: true,
         trackOffset: 0,
         trackLimit: 0,
-        search_filters: []
+        trackSearch: ""
     }
 
 })

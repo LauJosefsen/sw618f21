@@ -1,8 +1,12 @@
 import json
 
+import shapely.geometry
+
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
+
+from data_management.make_grid import make_grid
 from service.ais_data_service import AisDataService
 from flask import jsonify
 
@@ -29,12 +33,13 @@ def cluster_points(
 
 
 @inject
-def get_routes(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
+def get_tracks(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
     limit = request.args.get("limit", default=1, type=int)
     offset = request.args.get("offset", default=0, type=int)
     simplify = request.args.get("simplify", default=0, type=int)
+    mmsi = request.args.get("search", default=None, type=int)
     return jsonify(
-        ais_data_service.get_routes(limit, offset, simplify_tolerance=simplify)
+        ais_data_service.get_tracks(limit, offset, simplify_tolerance=simplify, search_mmsi=mmsi)
     )
 
 
@@ -69,4 +74,5 @@ def get_enc_cells(
 def cluster_heatmap(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    objs = ais_data_service.make_heatmap(0.05, 50)
+    return jsonify({'coordinates': make_grid(shapely.geometry.Point((9, 55)), shapely.geometry.Point((12, 58)), 50000) })
+    # objs = ais_data_service.make_heatmap(0.05, 50)
