@@ -118,23 +118,6 @@ def calc_difference_value(a, b):
     return actual_speed - a.sog
 
 
-def assign_calculated_sog_if_sog_not_exists(points: list[AisPoint]):
-    """
-    In case SOG is not defined, we set an approximate value by calculating SOG.
-    :param points: List of points
-    :return: None
-    """
-    if len(points) == 0:
-        return
-    # last_point = points[0]
-    for point in points[0:]:  # todo 1
-        if point.sog:
-            continue
-        # actual_speed = get_speed_between_points(last_point, point) todo
-
-        point.calc_sog = 20  # min(200, actual_speed)
-
-
 def get_speed_between_points(a, b):
     """
     Calculate speed between points based on distance over time.

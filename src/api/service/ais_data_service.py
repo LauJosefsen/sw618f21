@@ -6,7 +6,6 @@ import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
-from geomet import wkt
 from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
@@ -211,10 +210,12 @@ class AisDataService:
         SELECT
             t.id, t.ship_mmsi as mmsi, MIN(p.timestamp) as timestamp_begin,
             MAX(p.timestamp) as timestamp_end,
-            ST_AsGeoJson(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) as coordinates
+            ST_AsGeoJson(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s))) 
+                as coordinates
         FROM public.track AS t
         JOIN public.points as p ON t.id=p.track_id
-        WHERE t.ship_mmsi IN (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) > 1)
+        WHERE t.ship_mmsi IN (SELECT mmsi FROM SHIP as s WHERE 
+            (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) > 1)
         AND (%s OR t.ship_mmsi = %s)
         GROUP BY t.id, t.ship_mmsi
         LIMIT %s OFFSET %s;
