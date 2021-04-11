@@ -37,7 +37,10 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "camelcase": "allow"
+    }
   },
   "browserslist": {
     "production": [
