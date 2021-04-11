@@ -1,10 +1,13 @@
-from model.ais_data_entry import AisDataEntry
 import geopy.distance
+
+from model.ais_point import AisPoint
 
 
 def space_data_preprocessing(
-    track_points: list[AisDataEntry], threshold_completeness=1, threshold_space=15,
-) -> list[list[AisDataEntry]]:
+    track_points: list[AisPoint],
+    threshold_completeness=20,
+    threshold_space=25,
+) -> list[list[AisPoint]]:
     """
     Takes a list of points, and returns a list of groups of points.
     Input should be only one MMSI, and sorted by timestamp.
@@ -14,29 +17,20 @@ def space_data_preprocessing(
     :param threshold_space: Maximum speed difference between points in knots to be associated.
     :return: List of groups of points
     """
-    assign_calculated_sog_if_sog_not_exists(track_points)
-    # cleaning time data
-    tracks_time = partition(track_points, threshold_space)
-    # filtering of physical integrity
-    tracks_time = [
-        subtrack for subtrack in tracks_time if len(subtrack) >= threshold_completeness
+    # assign_calculated_sog_if_sog_not_exists(track_points)
+
+    subtracks_space = partition(track_points, threshold_space)
+    tracks = association(subtracks_space, threshold_space, threshold_completeness)
+
+    tracks = [
+        subtrack for subtrack in tracks if len(subtrack) >= threshold_completeness
     ]
-
-    output = []
-
-    # cleaning space data
-    for subtrack in tracks_time:
-        subtracks_space = partition(subtrack, threshold_space)
-        tracks_space = association(
-            subtracks_space, threshold_space, threshold_completeness
-        )
-        output.extend(tracks_space)
-    return output
+    return tracks
 
 
 def partition(
-    track_points: list[AisDataEntry], threshold_space: int
-) -> list[list[AisDataEntry]]:
+    track_points: list[AisPoint], threshold_space: int
+) -> list[list[AisPoint]]:
     """
     Takes a list of points and partitions it into a list of groups of points based on the space threshold.
     :param track_points: List of sorted points by timestamp
@@ -50,10 +44,12 @@ def partition(
     break_points = []
 
     for index, point in enumerate(track_points[1:]):
-        difference_value = calc_difference_value(point, previous_track_point)
+        difference_value = calc_difference_value(previous_track_point, point)
 
-        if difference_value > threshold_space:
+        if abs(difference_value) > threshold_space:
             break_points.append(index + 1)
+
+        previous_track_point = point
 
     # Use the breakpoints to split track_points into subtracks..
     subtracks = []
@@ -69,8 +65,8 @@ def partition(
 
 
 def association(
-    track_points: list[list[AisDataEntry]], threshold_space, threshold_completeness
-) -> list[list[AisDataEntry]]:
+    track_points: list[list[AisPoint]], threshold_space, threshold_completeness
+) -> list[list[AisPoint]]:
     """
     Associates tracks that are similar
     :param track_points: List of groups of points
@@ -79,14 +75,14 @@ def association(
     :return: List of groups of points
     """
     output = []
-    while track_points:
+    while len(track_points) != 0:
         boat = track_points.pop(0)
 
-        if track_points:
+        if len(track_points) != 0:
             for index, track in enumerate(track_points):
                 association_value = calc_difference_value(boat[-1], track[0])
 
-                if association_value < threshold_space:
+                if abs(association_value) < threshold_space:
                     boat.extend(track)
                     track_points.pop(index)
 
@@ -103,28 +99,27 @@ def calc_difference_value(a, b):
     :param b:
     :return: Difference in speed in knots
     """
+
+    if abs((b.timestamp - a.timestamp).total_seconds()) > 9000:
+        return 99999999999
+
+    distance = geopy.distance.distance(
+        (a.location[1], a.location[0]),
+        (b.location[1], b.location[0]),
+    ).nautical
+
+    if distance <= 0.26:
+        return 0
+
     actual_speed = get_speed_between_points(a, b)
 
-    if not a.sog:
-        return actual_speed - a.calc_sog
+    if a.sog is None:
+        if b.sog is None:
+            return 0
+        else:
+            return 999999
+
     return actual_speed - a.sog
-
-
-def assign_calculated_sog_if_sog_not_exists(points: list[AisDataEntry]):
-    """
-    In case SOG is not defined, we set an approximate value by calculating SOG.
-    :param points: List of points
-    :return: None
-    """
-    if len(points) == 0:
-        return
-    last_point = points[0]
-    for point in points[1:]:
-        if point.sog:
-            continue
-        actual_speed = get_speed_between_points(last_point, point)
-
-        point.calc_sog = min(200, actual_speed)
 
 
 def get_speed_between_points(a, b):
@@ -135,7 +130,8 @@ def get_speed_between_points(a, b):
     :return: Speed in knots
     """
     distance = geopy.distance.distance(
-        (a.latitude, a.longitude), (b.latitude, b.longitude),
+        (a.location[1], a.location[0]),
+        (b.location[1], b.location[0]),
     ).nautical
     time_distance = (b.timestamp - a.timestamp).total_seconds() / 3600.0
     if time_distance == 0:

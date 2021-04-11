@@ -3,9 +3,12 @@ redis
 pytest
 psycopg2-binary
 dependency-injector
-pandas
 d6tstack
 geomet
 geopy
 tqdm
 joblib
+psutil
+pyproj
+shapely
+yappi
