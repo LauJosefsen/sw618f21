@@ -114,7 +114,11 @@ def calc_difference_value(a, b):
     actual_speed = get_speed_between_points(a, b)
 
     if a.sog is None:
-        return 999999  # todo
+        if b.sog is None:
+            return 0
+        else:
+            return 999999
+
     return actual_speed - a.sog
 
 
