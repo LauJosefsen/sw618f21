@@ -1,11 +1,14 @@
+import csv
 import json
 import os
+import statistics
 from datetime import datetime
 
 import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
+import tqdm as tqdm
 from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
@@ -19,7 +22,7 @@ class AisDataService:
     __database = "ais"
     __user = "postgres"
     __pasword = "password"
-    __host = "db"
+    __host = "host"
     __port = "5432"
 
     # used for psycopg2
@@ -351,3 +354,49 @@ class AisDataService:
                         SELECT name, ST_ClusterDBSCAN(geom, eps := %s, minpoints := %s)
                 """
         cursor.execute(query, eps, minpoints)
+
+    def find_ais_time_median(self):
+        print("starting")
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        cursor.execute("START TRANSACTION;")
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi LIMIT 50"""
+        cursor.execute(query)
+        mmsi_list = cursor.fetchall()
+
+        time_differences = []
+        medians = []
+
+        for index, mmsi in enumerate(tqdm.tqdm(mmsi_list)):
+            query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
+            cursor.execute(query, (mmsi))
+            points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+            if len(points) < 100:
+                continue
+
+            i = 0
+            time_differences.append([])
+
+            for i, point in enumerate(points):
+                if i < len(points)-2 and point['timestamp'].date() == points[i+1]['timestamp'].date():
+                    time_differences[index].append(self.find_time_difference(point['timestamp'], points[i+1]['timestamp']))
+                else:
+                    continue
+        print("finding medians")
+
+        with open('time_differences.csv', 'w') as f:
+            write = csv.writer(f)
+            for item in time_differences:
+                if item:
+                    write.writerow(statistics.median(item))
+
+
+
+
+
+        return medians
+
+
+    def find_time_difference(self,a, b):
+        return (b - a).total_seconds()
