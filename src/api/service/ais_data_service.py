@@ -184,9 +184,6 @@ class AisDataService:
             new_dfg["b"] = obj["B"].astype(float)
             new_dfg["d"] = obj["D"].astype(float)
             new_dfg["c"] = obj["C"].astype(float)
-            new_dfg["is_processed"] = pd.Series(
-                [False for _ in range(len(new_dfg["mmsi"]))], index=new_dfg.index
-            )
 
             new_dfg.where(new_dfg.notnull(), None)
 
@@ -208,14 +205,6 @@ class AisDataService:
     def get_tracks(self, limit, offset, simplify_tolerance=0, search_mmsi=None):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-
-        # Test
-        query = """
-                    
-                SELECT mmsi FROM ship 
-            """
-
-        #end test
 
         query = """
         SELECT
@@ -245,12 +234,12 @@ class AisDataService:
 
         tcp = ThreadedConnectionPool(2, 16, self.dsn)
 
-        # Select unique MMSI from data where is_processed is false
+        # Select unique MMSI from data
         connection = tcp.getconn()
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
         query = (
-            """SELECT mmsi FROM public.data WHERE is_processed =  False GROUP BY mmsi"""
+            """SELECT mmsi FROM public.data GROUP BY mmsi"""
         )
         cursor.execute(query)
         tcp.putconn(connection)
@@ -271,50 +260,44 @@ class AisDataService:
     def cluster_mmsi(self, mmsi):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        query = """SELECT * FROM public.ship WHERE mmsi = %s"""
+
+        # Lets remove all the previous clustering.
+        query = """TRUNCATE ship RESTART IDENTITY CASCADE"""
         cursor.execute(query, tuple(mmsi))
-        ships = cursor.fetchall()
-        if len(ships) > 0:
-            # do some magic connecting courses if they are indeed connected.
-            pass  # todo
-        else:
-            # make a new ship, and cluster as normal
-            query = """
-                        INSERT INTO public.ship
-                        (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
-                        SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
-                        FROM public.data WHERE mmsi= %s LIMIT 1 RETURNING mmsi
-                        """
-            cursor.execute(query, tuple(mmsi))
-            ship_id = cursor.fetchall()[0]
 
-            query = """
-                        SELECT mmsi, timestamp, longitude, latitude, rot,
-                        sog, cog, heading, position_fixing_device_type FROM public.data
-                        WHERE mmsi = %s AND
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
-                        longitude <= 180 AND longitude >=-180 AND
-                        latitude <= 90 AND latitude >= -90 ORDER BY timestamp
+        # make a new ship, and cluster as normal
+        query = """
+                    INSERT INTO public.ship
+                    (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
+                    SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
+                    FROM public.data WHERE mmsi= %s LIMIT 1 RETURNING mmsi
                     """
-            cursor.execute(query, tuple(mmsi))
-            points = [
-                AisPoint(**point_dict)
-                for point_dict in [
-                    AisDataService.__build_dict(cursor, row)
-                    for row in cursor.fetchall()
-                ]
+
+        cursor.execute(query, tuple(mmsi))
+        ship_id = cursor.fetchall()[0]
+
+        query = """
+                    SELECT mmsi, timestamp, longitude, latitude, rot,
+                    sog, cog, heading, position_fixing_device_type FROM public.data
+                    WHERE mmsi = %s AND
+                    (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
+                    longitude <= 180 AND longitude >=-180 AND
+                    latitude <= 90 AND latitude >= -90 ORDER BY timestamp
+                """
+
+        cursor.execute(query, tuple(mmsi))
+        points = [
+            AisPoint(**point_dict)
+            for point_dict in [
+                AisDataService.__build_dict(cursor, row)
+                for row in cursor.fetchall()
             ]
+        ]
 
-            tracks = space_data_preprocessing(points)
+        tracks = space_data_preprocessing(points)
 
-            # insert tracks and points:
-            self.__insert_tracks(ship_id, tracks, cursor)
-
-            # mark as processed
-            # cursor.execute(
-            #     "UPDATE public.data SET is_processed = True WHERE mmsi=%s AND is_processed = False",
-            #     tuple(mmsi),
-            # )  # todo this might mark points that were not included, as they were removed as trash.
+        # insert tracks and points:
+        self.__insert_tracks(ship_id, tracks, cursor)
 
         connection.commit()
         connection.close()

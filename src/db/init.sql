@@ -33,8 +33,7 @@ CREATE TABLE public.data
     a                           double precision,
     b                           double precision,
     c                           double precision,
-    d                           double precision,
-    is_processed                bool DEFAULT False
+    d                           double precision
 );
 
 CREATE INDEX mmsi_index ON public.data (MMSI);
