@@ -21,6 +21,7 @@ class AisDataService:
     __user = "postgres"
     __pasword = "password"
     __host = "db"
+    __port = "5432"
 
     # used for psycopg2
     dsn = f"dbname={__database} user={__user} password={__pasword} host={__host} port={__port}"
@@ -219,7 +220,16 @@ class AisDataService:
         LIMIT %s OFFSET %s;
         """
 
-        cursor.execute(query, (simplify_tolerance, True if search_mmsi is None else False, search_mmsi, limit, offset))
+        cursor.execute(
+            query,
+            (
+                simplify_tolerance,
+                True if search_mmsi is None else False,
+                search_mmsi,
+                limit,
+                offset,
+            ),
+        )
         data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         cursor.close()
@@ -238,9 +248,7 @@ class AisDataService:
         connection = tcp.getconn()
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = (
-            """SELECT mmsi FROM public.data GROUP BY mmsi"""
-        )
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
         cursor.execute(query)
         tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
@@ -289,8 +297,7 @@ class AisDataService:
         points = [
             AisPoint(**point_dict)
             for point_dict in [
-                AisDataService.__build_dict(cursor, row)
-                for row in cursor.fetchall()
+                AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
             ]
         ]
 

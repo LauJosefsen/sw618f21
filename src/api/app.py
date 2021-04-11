@@ -8,9 +8,11 @@ import atexit
 
 # End profiling and save the results into file
 def output_profiler_stats_file():
-    profile_file_name = 'yappi.' + datetime.now().isoformat().replace(':', '.')+".pstat"
+    profile_file_name = (
+        "yappi." + datetime.now().isoformat().replace(":", ".") + ".pstat"
+    )
     func_stats = yappi.get_func_stats()
-    func_stats.save(profile_file_name, type='pstat')
+    func_stats.save(profile_file_name, type="pstat")
     yappi.stop()
     yappi.clear_stats()
 
@@ -45,16 +47,16 @@ app.add_url_rule(
 
 
 def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
+    func = request.environ.get("werkzeug.server.shutdown")
     if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
+        raise RuntimeError("Not running with the Werkzeug Server")
     func()
 
 
-@app.route('/shutdown', methods=['GET'])
+@app.route("/shutdown", methods=["GET"])
 def shutdown():
     shutdown_server()
-    return 'Server shutting down...'
+    return "Server shutting down..."
 
 
 @app.after_request  # blueprint can also be app~~

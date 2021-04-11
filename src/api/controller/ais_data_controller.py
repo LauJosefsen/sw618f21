@@ -39,7 +39,9 @@ def get_tracks(ais_data_service: AisDataService = Provide[Container.ais_data_ser
     simplify = request.args.get("simplify", default=0, type=int)
     mmsi = request.args.get("search", default=None, type=int)
     return jsonify(
-        ais_data_service.get_tracks(limit, offset, simplify_tolerance=simplify, search_mmsi=mmsi)
+        ais_data_service.get_tracks(
+            limit, offset, simplify_tolerance=simplify, search_mmsi=mmsi
+        )
     )
 
 
@@ -74,5 +76,11 @@ def get_enc_cells(
 def cluster_heatmap(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    return jsonify({'coordinates': make_grid(shapely.geometry.Point((9, 55)), shapely.geometry.Point((12, 58)), 50000) })
+    return jsonify(
+        {
+            "coordinates": make_grid(
+                shapely.geometry.Point((9, 55)), shapely.geometry.Point((12, 58)), 50000
+            )
+        }
+    )
     # objs = ais_data_service.make_heatmap(0.05, 50)
