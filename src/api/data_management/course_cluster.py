@@ -129,7 +129,7 @@ def get_speed_between_points(a, b):
     :param b:
     :return: Speed in knots
     """
-    distance = geopy.distance.distance(
+    istance = geopy.distance.distance(
         (a.location[1], a.location[0]),
         (b.location[1], b.location[0]),
     ).nautical

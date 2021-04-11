@@ -9,6 +9,7 @@ import { MapPoints } from './shared/map/points'
 import { settings, SettingsContext, settings_with_setter } from './providers/settings_provider'
 import React, { useEffect, useState } from 'react'
 import { HeatMap } from './heatmap'
+import { MapHeatMapGrid } from './shared/map/heatmap_grid'
 
 function App () {
   const [local_settings, setSettings] = useState < settings > (
@@ -43,13 +44,14 @@ function App () {
             <SettingsContext.Consumer>
               {({ settings }) => (
                 <>
-                  {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ''}
-                  {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ''}
+                  {/* {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ''}
+                  {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ''} */}
                 </>
               )}
 
             </SettingsContext.Consumer>
-            <MapPoints />
+            <MapHeatMapGrid/>
+            {/* <MapPoints /> */}
             <HeatMap data={[[57, 11, 100]]} />
           </MapContainer>
         </header>
