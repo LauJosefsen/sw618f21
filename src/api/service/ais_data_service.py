@@ -240,7 +240,7 @@ class AisDataService:
 
         return data
 
-    def new_cluster(self):
+    def cluster_points(self):
 
         tcp = ThreadedConnectionPool(2, 16, self.dsn)
 

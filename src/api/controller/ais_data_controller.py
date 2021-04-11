@@ -28,7 +28,7 @@ def import_ais_data(
 def cluster_points(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    data = ais_data_service.new_cluster()
+    data = ais_data_service.cluster_points()
     return jsonify(data)
 
 
