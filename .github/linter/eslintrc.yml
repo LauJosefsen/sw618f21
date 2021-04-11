@@ -40,4 +40,5 @@ plugins:
 #########
 rules: {
   camelcase: allow
+  snakecase: allow
 }
