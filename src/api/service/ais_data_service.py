@@ -21,8 +21,8 @@ class AisDataService:
     # Database connection:
     __database = "ais"
     __user = "postgres"
-    __pasword = "password"
-    __host = "host"
+    __pasword = "fisk42koala21"
+    __host = "techsource.dk"
     __port = "5432"
 
     # used for psycopg2
@@ -360,43 +360,43 @@ class AisDataService:
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi LIMIT 10"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
         time_differences = []
+
         medians = []
 
         for index, mmsi in enumerate(tqdm.tqdm(mmsi_list)):
             query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
-            cursor.execute(query, (mmsi))
+            cursor.execute(query, mmsi)
             points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
-
+            time_differences.append([])
             if len(points) < 100:
                 continue
 
             i = 0
-            time_differences.append([])
+
+            print(index)
 
             for i, point in enumerate(points):
                 if i < len(points)-2 and point['timestamp'].date() == points[i+1]['timestamp'].date():
+
                     time_differences[index].append(self.find_time_difference(point['timestamp'], points[i+1]['timestamp']))
                 else:
                     continue
         print("finding medians")
+        for item in time_differences:
+            if item:
+                medians.append(statistics.median(item))
 
         with open('time_differences.csv', 'w') as f:
             write = csv.writer(f)
-            for item in time_differences:
-                if item:
-                    write.writerow(statistics.median(item))
-
-
-
-
+            write.writerow(medians)
 
         return medians
 
 
     def find_time_difference(self,a, b):
-        return (b - a).total_seconds()
+        return int((b - a).total_seconds())
