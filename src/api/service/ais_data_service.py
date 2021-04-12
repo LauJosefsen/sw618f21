@@ -1,11 +1,15 @@
+import configparser
+import csv
 import json
 import os
+import statistics
 from datetime import datetime
 
 import d6tstack.utils
 import numpy as np
 import pandas as pd
 import psycopg2
+import tqdm as tqdm
 from joblib import Parallel, delayed
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
@@ -16,11 +20,14 @@ from model.ais_point import AisPoint
 
 class AisDataService:
     # Database connection:
-    __database = "ais"
-    __user = "postgres"
-    __pasword = "password"
-    __host = "db"
-    __port = "5432"
+    config = configparser.ConfigParser()
+    config.read("sql.ini")
+
+    __database = config["sql"]["database"]
+    __user = config["sql"]["user"]
+    __pasword = config["sql"]["password"]
+    __host = config["sql"]["host"]
+    __port = config["sql"]["port"]
 
     # used for psycopg2
     dsn = f"dbname={__database} user={__user} password={__pasword} host={__host} port={__port}"
@@ -351,3 +358,53 @@ class AisDataService:
                         SELECT name, ST_ClusterDBSCAN(geom, eps := %s, minpoints := %s)
                 """
         cursor.execute(query, eps, minpoints)
+
+    def find_ais_time_median(self):
+        print("starting")
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        cursor.execute("START TRANSACTION;")
+        query = """SELECT DISTINCT mmsi FROM public.data"""
+        cursor.execute(query)
+        mmsi_list = cursor.fetchall()
+
+        time_differences = []
+
+        medians = []
+
+        for index, mmsi in enumerate(tqdm.tqdm(mmsi_list)):
+            query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
+            cursor.execute(query, mmsi)
+            points = [
+                AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
+            ]
+            time_differences.append([])
+            if len(points) < 100:
+                continue
+
+            i = 0
+            for i, point in enumerate(points):
+                if (
+                    i < len(points) - 2
+                    and point["timestamp"].date() == points[i + 1]["timestamp"].date()
+                ):
+                    time_differences[index].append(
+                        self.find_time_difference(
+                            point["timestamp"], points[i + 1]["timestamp"]
+                        )
+                    )
+                else:
+                    continue
+        print("finding medians")
+        for item in time_differences:
+            if item:
+                medians.append(statistics.median(item))
+
+        with open("time_differences.csv", "w") as f:
+            write = csv.writer(f)
+            write.writerow(medians)
+
+        return medians
+
+    def find_time_difference(self, a, b):
+        return int((b - a).total_seconds())

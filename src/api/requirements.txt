@@ -12,3 +12,4 @@ psutil
 pyproj
 shapely
 yappi
+tqdm

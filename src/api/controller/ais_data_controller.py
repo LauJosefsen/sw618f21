@@ -1,11 +1,8 @@
 import json
-
 import shapely.geometry
-
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
-
 from data_management.make_grid import make_grid
 from service.ais_data_service import AisDataService
 from flask import jsonify
@@ -84,3 +81,10 @@ def cluster_heatmap(
         }
     )
     # objs = ais_data_service.make_heatmap(0.05, 50)
+
+
+@inject
+def find_ais_time_median(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    return jsonify(ais_data_service.find_ais_time_median())
