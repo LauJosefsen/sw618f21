@@ -6,3 +6,4 @@ venv
 build
 dist
 yappi*
+/src/api/sql.ini

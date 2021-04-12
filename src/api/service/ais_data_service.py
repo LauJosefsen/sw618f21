@@ -1,3 +1,4 @@
+import configparser
 import csv
 import json
 import os
@@ -19,11 +20,14 @@ from model.ais_point import AisPoint
 
 class AisDataService:
     # Database connection:
-    __database = "ais"
-    __user = "postgres"
-    __pasword = "fisk42koala21"
-    __host = "techsource.dk"
-    __port = "5432"
+    config = configparser.ConfigParser()
+    config.read('sql.ini')
+
+    __database = config['sql']['database']
+    __user = config['sql']['user']
+    __pasword = config['sql']['password']
+    __host = config['sql']['host']
+    __port = config['sql']['port']
 
     # used for psycopg2
     dsn = f"dbname={__database} user={__user} password={__pasword} host={__host} port={__port}"
