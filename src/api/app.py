@@ -45,8 +45,11 @@ app.add_url_rule(
     controller.ais_data_controller.cluster_heatmap,
 )
 app.add_url_rule(
-    "/find_ais_time_median", "find_ais_time_median", controller.ais_data_controller.find_ais_time_median
+    "/find_ais_time_median",
+    "find_ais_time_median",
+    controller.ais_data_controller.find_ais_time_median,
 )
+
 
 def shutdown_server():
     func = request.environ.get("werkzeug.server.shutdown")

@@ -21,13 +21,13 @@ from model.ais_point import AisPoint
 class AisDataService:
     # Database connection:
     config = configparser.ConfigParser()
-    config.read('sql.ini')
+    config.read("sql.ini")
 
-    __database = config['sql']['database']
-    __user = config['sql']['user']
-    __pasword = config['sql']['password']
-    __host = config['sql']['host']
-    __port = config['sql']['port']
+    __database = config["sql"]["database"]
+    __user = config["sql"]["user"]
+    __pasword = config["sql"]["password"]
+    __host = config["sql"]["host"]
+    __port = config["sql"]["port"]
 
     # used for psycopg2
     dsn = f"dbname={__database} user={__user} password={__pasword} host={__host} port={__port}"
@@ -375,15 +375,24 @@ class AisDataService:
         for index, mmsi in enumerate(tqdm.tqdm(mmsi_list)):
             query = """SELECT * FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
             cursor.execute(query, mmsi)
-            points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+            points = [
+                AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
+            ]
             time_differences.append([])
             if len(points) < 100:
                 continue
 
             i = 0
             for i, point in enumerate(points):
-                if i < len(points)-2 and point['timestamp'].date() == points[i+1]['timestamp'].date():
-                    time_differences[index].append(self.find_time_difference(point['timestamp'], points[i+1]['timestamp']))
+                if (
+                    i < len(points) - 2
+                    and point["timestamp"].date() == points[i + 1]["timestamp"].date()
+                ):
+                    time_differences[index].append(
+                        self.find_time_difference(
+                            point["timestamp"], points[i + 1]["timestamp"]
+                        )
+                    )
                 else:
                     continue
         print("finding medians")
@@ -391,12 +400,11 @@ class AisDataService:
             if item:
                 medians.append(statistics.median(item))
 
-        with open('time_differences.csv', 'w') as f:
+        with open("time_differences.csv", "w") as f:
             write = csv.writer(f)
             write.writerow(medians)
 
         return medians
 
-
-    def find_time_difference(self,a, b):
+    def find_time_difference(self, a, b):
         return int((b - a).total_seconds())
