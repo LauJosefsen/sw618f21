@@ -364,7 +364,7 @@ class AisDataService:
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
+        query = """SELECT DISTINCT mmsi FROM public.data"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 

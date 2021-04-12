@@ -82,6 +82,7 @@ def cluster_heatmap(
     )
     # objs = ais_data_service.make_heatmap(0.05, 50)
 
+
 @inject
 def find_ais_time_median(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
