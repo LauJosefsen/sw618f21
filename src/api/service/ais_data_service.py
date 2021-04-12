@@ -360,7 +360,7 @@ class AisDataService:
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi LIMIT 10"""
+        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
@@ -377,12 +377,8 @@ class AisDataService:
                 continue
 
             i = 0
-
-            print(index)
-
             for i, point in enumerate(points):
                 if i < len(points)-2 and point['timestamp'].date() == points[i+1]['timestamp'].date():
-
                     time_differences[index].append(self.find_time_difference(point['timestamp'], points[i+1]['timestamp']))
                 else:
                     continue
