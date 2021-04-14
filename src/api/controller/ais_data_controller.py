@@ -1,13 +1,11 @@
 import json
 
 import geopy
-import shapely.geometry
-
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
 
-from data_management.make_grid import make_grid_mercator, make_grid_meters
+from data_management.make_grid import make_grid_mercator
 from service.ais_data_service import AisDataService
 from flask import jsonify
 
@@ -72,26 +70,15 @@ def get_enc_cells(
     return jsonify(objs)
 
 
-# TODO This is WIP and we are currently testing on pgadmin
-@inject
-def cluster_heatmap(
-        ais_data_service: AisDataService = Provide[Container.ais_data_service],
-):
-    # grid = make_grid_mercator(geopy.Point((56, 10)), geopy.Point((57, 11)), 100)
+def cluster_heatmap():
     # grid = make_grid_meters(geopy.Point((56, 10)), geopy.Point((57, 11)), 10000)
     # grid = make_grid_meters(geopy.Point((70, 10)), geopy.Point((80, 20)), 10000)
     grid = make_grid_mercator(geopy.Point((70, 10)), geopy.Point((80, 20)), 100)
-
-    # for index, rect in enumerate(grid):
-    #     grid[index]['coordinates'] = list(grid[index]['coordinates'])
-    #     grid[index]['coordinates'][0] = list(grid[index]['coordinates'][0])
-    #     for index2, coord in enumerate(rect['coordinates'][0]):
-    #         grid[index]['coordinates'][0][index2] = (coord[1], coord[0])
-
     return jsonify(grid)
 
-    # return jsonify(make_grid(
-    #     geopy.Point((59, -50)), geopy.Point((80, 0)), 1, in_meters=False
-    # )
-    # )
-    # objs = ais_data_service.make_heatmap(0.05, 50)
+
+@inject
+def find_ais_time_median(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    return jsonify(ais_data_service.find_ais_time_median())
