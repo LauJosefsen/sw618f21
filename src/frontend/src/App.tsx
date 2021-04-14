@@ -51,8 +51,8 @@ function App () {
 
             </SettingsContext.Consumer>
             <MapHeatMapGrid/>
-            {/* <MapPoints /> */}
-            <HeatMap data={[[57, 11, 100]]} />
+            {/* <MapPoints /> */} 
+            {/*<HeatMap data={[[57, 11, 100]]} />*/}
           </MapContainer>
         </header>
       </SettingsContext.Provider>

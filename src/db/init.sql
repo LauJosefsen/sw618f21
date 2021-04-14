@@ -245,4 +245,10 @@ INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Aabenraa
 
 UPDATE public.enc_cells SET location = st_setsrid(location, 4326);
 
+CREATE INDEX point_geom_index
+  ON points
+  USING GIST (location);
+
+CREATE INDEX point_track ON points (track_id ASC NULLS FIRST);
+
 COMMIT;

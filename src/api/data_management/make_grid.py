@@ -94,3 +94,30 @@ def make_grid_meters(sw: geopy.point, ne: geopy.point, step_size: float):
     print(end - start)
 
     return grid
+
+
+def make_grid_degrees(sw: geopy.point, ne: geopy.point, step_size: float):
+
+    grid = []
+    latitude_s = sw.latitude
+    while latitude_s < ne.latitude:
+        next_latitude_s = latitude_s + step_size
+
+        longitude_w = sw.longitude
+        while longitude_w < ne.longitude:
+            next_longitude_w = longitude_w + step_size
+
+            grid.append(shapely.geometry.mapping(Polygon(
+                [
+                    [latitude_s, longitude_w],  # sw
+                    [next_latitude_s, longitude_w],  # nw
+                    [next_latitude_s, next_longitude_w],  # ne
+                    [latitude_s, next_longitude_w]  # se
+                ]
+            )))
+
+            longitude_w = next_longitude_w
+
+        latitude_s = next_latitude_s
+
+    return grid

@@ -80,9 +80,9 @@ class AisDataService:
 
         df = pd.read_csv(enc_fname, delimiter=",", names=colnames)
         connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
 
         for index, row in df.iterrows():
-            cursor = connection.cursor()
             query = """INSERT INTO enc_cells(cell_name, cell_title, location)
             values(%s, %s, ST_SetSRID(ST_MakePolygon(ST_GeomFromText(%s)), 4326))"""
 
@@ -249,21 +249,24 @@ class AisDataService:
         return data
 
     def cluster_points(self):
-
-        tcp = ThreadedConnectionPool(2, 16, self.dsn)
-
-        # Select unique MMSI from data
-        connection = tcp.getconn()
+        connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        cursor.execute("START TRANSACTION;")
-        query = """SELECT mmsi FROM public.data GROUP BY mmsi"""
+
+        # Lets remove all the previous clustering.
+        cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
+
+        query = """SELECT DISTINCT mmsi FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999"""
         cursor.execute(query)
-        tcp.putconn(connection)
         mmsi_list = cursor.fetchall()
+
+        connection.commit()
+        connection.close()
 
         Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
         # [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
         cursor.execute(
             """
                 DELETE FROM ship WHERE mmsi IN
@@ -271,15 +274,12 @@ class AisDataService:
             """
         )
 
-        tcp.closeall()
+        connection.commit()
+        connection.close()
 
     def cluster_mmsi(self, mmsi):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-
-        # Lets remove all the previous clustering.
-        query = """TRUNCATE ship RESTART IDENTITY CASCADE"""
-        cursor.execute(query, tuple(mmsi))
 
         # make a new ship, and cluster as normal
         query = """

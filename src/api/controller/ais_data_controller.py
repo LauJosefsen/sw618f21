@@ -1,11 +1,8 @@
 import json
-
-import geopy
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
 
-from data_management.make_grid import make_grid_mercator
 from service.ais_data_service import AisDataService
 from flask import jsonify
 
@@ -70,11 +67,9 @@ def get_enc_cells(
     return jsonify(objs)
 
 
+# TODO This is WIP and we are currently testing on pgadmin
 def cluster_heatmap():
-    # grid = make_grid_meters(geopy.Point((56, 10)), geopy.Point((57, 11)), 10000)
-    # grid = make_grid_meters(geopy.Point((70, 10)), geopy.Point((80, 20)), 10000)
-    grid = make_grid_mercator(geopy.Point((70, 10)), geopy.Point((80, 20)), 100)
-    return jsonify(grid)
+    return jsonify()
 
 
 @inject
