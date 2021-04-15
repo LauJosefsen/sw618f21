@@ -8,20 +8,21 @@ import { MapTrack } from './shared/map/track'
 import { MapPoints } from './shared/map/points'
 import { settings, SettingsContext, settings_with_setter } from './providers/settings_provider'
 import React, { useEffect, useState } from 'react'
-import { HeatMap } from './heatmap'
+import { SimpleHeatMap } from './shared/map/simple_heatmap'
 import { MapHeatMapGrid } from './shared/map/heatmap_grid'
 
-function App () {
-  const [local_settings, setSettings] = useState < settings > (
+function App() {
+  const [local_settings, setSettings] = useState<settings>(
     {
       encSearch: '',
-      showEnc: false,
+      showEnc: true,
       encOffset: 0,
-      encLimit: 5,
+      encLimit: 60,
       showTrack: true,
       trackOffset: 0,
       trackLimit: 5,
-      trackSearch: ''
+      trackSearch: '',
+      encIdForHeatMap: undefined
 
     }
   )
@@ -44,15 +45,16 @@ function App () {
             <SettingsContext.Consumer>
               {({ settings }) => (
                 <>
-                  {/* {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ''}
-                  {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ''} */}
+                  {settings.showEnc ? <MapEncCells limit={settings.encLimit} offset={settings.encOffset} search={settings.encSearch} /> : ''}
+                  {/* {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ''} */}
+
+                  {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""}
                 </>
               )}
 
             </SettingsContext.Consumer>
-            <MapHeatMapGrid/>
-            {/* <MapPoints /> */} 
-            {/*<HeatMap data={[[57, 11, 100]]} />*/}
+            {/* <MapHeatMapGrid/> */}
+            {/* <MapPoints /> */}
           </MapContainer>
         </header>
       </SettingsContext.Provider>

@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { Button, Spinner } from 'reactstrap';
 import { hashStringToColor } from '../../helpers/hash_strings';
 import { EncCell } from '../../models/enc_cells';
+import { SettingsContext } from '../../providers/settings_provider';
 
 interface Props {
     limit: number,
@@ -16,7 +17,6 @@ export const MapEncCells = (props: Props) => {
     const decode_polygon_to_limits = (data: EncCell[]): EncCell[] => {
         // iterate every location in data and write new limit fields
         data.forEach(enc_cell => {
-            console.log("point", enc_cell)
             enc_cell.westLimit = enc_cell.location.coordinates[0][0][0]
             enc_cell.northLimit = enc_cell.location.coordinates[0][0][1]
             enc_cell.eastLimit = enc_cell.location.coordinates[0][2][0]
@@ -39,24 +39,36 @@ export const MapEncCells = (props: Props) => {
     if (loading_enc || !data_enc) return <Spinner />
 
 
-    return (<>
-        {data_enc.map((enc: EncCell) => {
+    return (
+        <SettingsContext.Consumer>
+            {({ settings, setSettings }) => (
+                <>
+                    {data_enc.map((enc: EncCell) => {
 
-            return (<>
-                {
-                    enc.cell_title.toLocaleLowerCase().search(props.search.toLocaleLowerCase()) !== -1 ? <Rectangle bounds={[[enc.northLimit, enc.westLimit], [enc.southLimit, enc.eastLimit]]} pathOptions={{ color: hashStringToColor(enc.cell_title) }}>
-                        <Popup>
-                            <h3>
-                                {enc.cell_title}
-                            </h3>
-                            <p>
-                                {enc.cell_name}
-                            </p>
-                            <Button>Show tracks in cell</Button>
-                        </Popup>
-                    </Rectangle> : ""
-                }</>
+                        return (<>
+                            {
+                                enc.cell_title.toLocaleLowerCase().search(props.search.toLocaleLowerCase()) !== -1 ? <Rectangle bounds={[[enc.northLimit, enc.westLimit], [enc.southLimit, enc.eastLimit]]} pathOptions={{ color: hashStringToColor(enc.cell_title) }}>
+                                    <Popup>
+                                        <h3>
+                                            {enc.cell_title}
+                                        </h3>
+                                        <p>
+                                            {enc.cell_name}
+                                        </p>
+                                        <Button>Show tracks in cell</Button>
+                                        <Button onClick={
+                                            () => {
+                                                console.log(enc.cell_id)
+                                                setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false })
+                                            }
+                                        }>Show heatmap in enc_cell</Button>
+                                    </Popup>
+                                </Rectangle> : ""
+                            }</>
 
-            )
-        })}</>);
+                        )
+                    })}
+                </>
+            )}
+        </SettingsContext.Consumer>);
 }

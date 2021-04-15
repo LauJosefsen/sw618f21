@@ -5,6 +5,7 @@ import { Button, Spinner } from 'reactstrap';
 import { hashStringToColor } from '../../helpers/hash_strings';
 import { EncCell } from '../../models/enc_cells';
 import * as L from 'leaflet';
+import { CustomSpinner } from '../custom_spinner';
 
 interface Props {
 }
@@ -32,12 +33,11 @@ export const MapHeatMapGrid = (props: Props) => {
     if (error_enc || error_enc) return <>'An error has occurred: ' + error</>
 
 
-    if (loading_enc || !data_enc) return <Spinner />
+    if (loading_enc || !data_enc) return <CustomSpinner />
 
 
     return (<>
         {data_enc.map((rect: any) => {
-            console.log(rect)
             return (<>
                 <Rectangle bounds={rect.coordinates[0]} pathOptions={{ color: "black" }}>
                     <Popup>

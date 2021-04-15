@@ -57,7 +57,7 @@ def get_enc_cells(
     offset = request.args.get("offset", default=0, type=int)
 
     objs = ais_data_service.fetch_specific_limit(
-        "cell_name, cell_title," " ST_AsGeoJson(public.enc_cells.location) as location",
+        "cell_id, cell_name, cell_title," " ST_AsGeoJson(public.enc_cells.location) as location",
         "enc_cells",
         limit,
         offset,
@@ -68,8 +68,12 @@ def get_enc_cells(
 
 
 # TODO This is WIP and we are currently testing on pgadmin
-def cluster_heatmap():
-    return jsonify()
+@inject
+def cluster_heatmap(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
+    return jsonify(ais_data_service.simple_heatmap(enc_cell_id))
 
 
 @inject

@@ -2,6 +2,7 @@ import { MapEncCells } from "../shared/map/enc_cells";
 import { GeoJsonLocation } from "./location";
 
 export interface EncCell{ 
+    cell_id: number,
     cell_name: string,
     cell_title: string,
     location: GeoJsonLocation,

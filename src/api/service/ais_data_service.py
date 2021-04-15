@@ -363,7 +363,6 @@ class AisDataService:
         print("starting")
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        cursor.execute("START TRANSACTION;")
         query = """SELECT DISTINCT mmsi FROM public.data"""
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
@@ -408,3 +407,48 @@ class AisDataService:
 
     def find_time_difference(self, a, b):
         return int((b - a).total_seconds())
+
+    def simple_heatmap(self, enc_cell_id: str):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """
+                WITH heatmap_data AS (
+                    SELECT * FROM public.heatmap_10m as heatmap
+                    JOIN enc_cells as enc on st_contains(enc.location, heatmap.grid_point)
+                    WHERE enc.cell_id = %s
+                )
+                SELECT
+                    ST_AsGeoJson(ST_FlipCoordinates(grid_point)) as grid_point,
+                    (count*100.0/(SELECT MAX(count) FROM heatmap_data)) as intensity
+                FROM heatmap_data
+            """
+        cursor.execute(query, (enc_cell_id,))
+
+        points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        query = """
+                    SELECT cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location FROM enc_cells WHERE cell_id = %s
+                    """
+        cursor.execute(query, (enc_cell_id,))
+
+        enc_cells = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+        if len(enc_cells) != 1:
+            return {}
+        enc_cell = enc_cells[0]
+        enc_cell['location'] = json.loads(enc_cell['location'])
+
+        connection.close()
+
+        for point in points:
+            point['grid_point'] = json.loads(point['grid_point'])
+
+        points_formatted = [
+            [
+                point['grid_point']['coordinates'][0],
+                point['grid_point']['coordinates'][1],
+                point['intensity']
+            ]
+            for point in points
+        ]
+
+        return {"enc": enc_cell, "heatmap_data": points_formatted}

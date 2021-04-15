@@ -13,6 +13,9 @@ export interface settings {
     trackOffset: number;
     trackLimit: number;
     trackSearch: string;
+
+    // HEATMAP
+    encIdForHeatMap: number | undefined 
 }
 
 export interface settings_with_setter {
@@ -33,7 +36,8 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         showTrack: true,
         trackOffset: 0,
         trackLimit: 0,
-        trackSearch: ""
+        trackSearch: "",
+        encIdForHeatMap: undefined
     }
 
 })
