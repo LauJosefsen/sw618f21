@@ -468,7 +468,9 @@ class AisDataService:
         points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         query = """
-                    SELECT cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location FROM enc_cells WHERE cell_id = %s
+                    SELECT
+                    cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location
+                    FROM enc_cells WHERE cell_id = %s
                     """
         cursor.execute(query, (enc_cell_id,))
 

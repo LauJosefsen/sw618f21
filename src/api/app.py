@@ -1,7 +1,6 @@
 import controller.ais_data_controller
 from container import Container
 from flask import Flask, request
-from datetime import datetime
 
 # import yappi
 # import atexit

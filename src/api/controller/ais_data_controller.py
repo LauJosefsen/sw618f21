@@ -1,4 +1,3 @@
-import json
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
