@@ -4,12 +4,9 @@ import { MapContainer, TileLayer } from "react-leaflet";
 
 import { CustomSidebar } from "./shared/sidebar";
 import { MapEncCells } from "./shared/map/enc_cells";
-import { MapTrack } from "./shared/map/track";
-import { MapPoints } from "./shared/map/points";
-import { settings, SettingsContext, settings_with_setter } from "./providers/settings_provider";
-import React, { useEffect, useState } from "react";
+import { settings, SettingsContext } from "./providers/settings_provider";
+import { useState } from "react";
 import { SimpleHeatMap } from "./shared/map/simple_heatmap";
-import { MapHeatMapGrid } from "./shared/map/heatmap_grid";
 
 function App() {
     const [local_settings, setSettings] = useState<settings>({

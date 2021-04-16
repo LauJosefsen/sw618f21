@@ -4,7 +4,7 @@ import "leaflet.heat";
 import { Popup, Rectangle, useMap } from "react-leaflet";
 import { useEffect } from "react";
 import { useQuery } from "react-query";
-import { Button, Spinner } from "reactstrap";
+import { Button } from "reactstrap";
 import { SettingsContext } from "../../providers/settings_provider";
 import { CustomSpinner } from "../custom_spinner";
 
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const SimpleHeatMap = (props: Props) => {
-    const { isLoading: loading_enc, error: error_enc, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
+    const { isLoading: loading, error, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
         fetch(`http://localhost:5000/cluster-heatmap?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
     );
 
@@ -28,9 +28,9 @@ export const SimpleHeatMap = (props: Props) => {
         if (heatMapLayer) {
             heatMapLayer.addTo(map);
         }
-    }, [heatMapLayer]);
+    }, [heatMapLayer, map]);
 
-    if (!data_heatmap) return <CustomSpinner message="Loading heatmap layer" />;
+    if (!data_heatmap || loading || error) return <CustomSpinner message="Loading heatmap layer" />;
 
     return (
         <SettingsContext.Consumer>

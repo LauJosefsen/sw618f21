@@ -1,8 +1,6 @@
-import { bounds } from "leaflet";
-import * as React from "react";
 import { Popup, Rectangle } from "react-leaflet";
 import { useQuery } from "react-query";
-import { Button, Spinner } from "reactstrap";
+import { Button } from "reactstrap";
 import { hashStringToColor } from "../../helpers/hash_strings";
 import { EncCell } from "../../models/enc_cells";
 import { SettingsContext } from "../../providers/settings_provider";

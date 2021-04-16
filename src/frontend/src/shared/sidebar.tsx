@@ -1,9 +1,7 @@
 import * as React from "react";
-import { Component } from "react";
 import Sidebar from "react-sidebar";
 import { Button, Input, Label } from "reactstrap";
 import { settings, SettingsContext } from "../providers/settings_provider";
-import Slider, { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
 
 export const CustomSidebar = () => {
