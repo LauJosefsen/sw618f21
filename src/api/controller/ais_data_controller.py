@@ -67,7 +67,6 @@ def get_enc_cells(
     )
 
 
-# TODO This is WIP and we are currently testing on pgadmin
 @inject
 def cluster_heatmap(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],

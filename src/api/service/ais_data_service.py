@@ -449,7 +449,7 @@ class AisDataService:
     def find_time_difference(self, a, b):
         return int((b - a).total_seconds())
 
-    def simple_heatmap(self, enc_cell_id: str):
+    def simple_heatmap(self, enc_cell_id: int):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         query = """
