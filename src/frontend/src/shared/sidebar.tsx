@@ -1,38 +1,103 @@
-import * as React from 'react';
-import { Component } from 'react';
+import * as React from "react";
+import { Component } from "react";
 import Sidebar from "react-sidebar";
-import { Button, Input, Label } from 'reactstrap';
-import { SettingsContext } from '../providers/settings_provider';
+import { Button, Input, Label } from "reactstrap";
+import { settings, SettingsContext } from "../providers/settings_provider";
+import Slider, { Range } from "rc-slider";
+import "rc-slider/assets/index.css";
 
 export const CustomSidebar = () => {
+    const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
 
-    const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false)
+    const toggleEncBoundsKey = (settings: settings, key: string): settings => {
+        settings.encBounds[key][0] = !settings.encBounds[key][0];
+        return { ...settings };
+    };
 
     return (
-
         <Sidebar
             sidebar={
                 <SettingsContext.Consumer>
                     {({ settings, setSettings }) => (
                         <>
                             <p>Sidebar content</p>
-                            <Button onClick={() => { setSettings({ ...settings, showEnc: !settings.showEnc }) }}>{settings.showEnc ? "Hide ENC" : "Show ENC"}</Button>
-                            <Label>ENC</Label>
-                            <Input type="number" value={settings.encLimit} onChange={(e) => { setSettings({ ...settings, encLimit: parseInt(e.currentTarget.value) }) }} />
-                            <Input type="text" value={settings.encSearch} onChange={(e) => { setSettings({ ...settings, encSearch: e.currentTarget.value }) }} />
-                            <Button className="sidebar-button" onClick={() => setSidebarOpen(false)}>Close sidebar</Button>
+
+                            <h3>ENC</h3>
+                            <Button
+                                onClick={() => {
+                                    setSettings({ ...settings, showEnc: !settings.showEnc });
+                                }}
+                            >
+                                {settings.showEnc ? "Hide ENC" : "Show ENC"}
+                            </Button>
+                            <br />
+                            {!settings.showEnc ? (
+                                ""
+                            ) : (
+                                <>
+                                    <Label>Sizes shown</Label>
+                                    <p className="ml-5">
+                                        {Object.entries(settings.encBounds).map(([key, val]) => {
+                                            return (
+                                                <>
+                                                    <Input
+                                                        id={`${key}-enc`}
+                                                        type="checkbox"
+                                                        checked={val[0]}
+                                                        onChange={() => {
+                                                            setSettings(toggleEncBoundsKey(settings, key));
+                                                        }}
+                                                    />
+                                                    <Label for={`${key}-enc`}>
+                                                        {key} ENC ({val[1]}-{val[2]} km²)
+                                                    </Label>
+                                                    <br />
+                                                </>
+                                            );
+                                        })}
+                                    </p>
+                                    <Label>Search</Label>
+                                    <Input
+                                        type="text"
+                                        value={settings.encSearch}
+                                        onChange={(e) => {
+                                            setSettings({ ...settings, encSearch: e.currentTarget.value });
+                                        }}
+                                    />
+                                </>
+                            )}
+
                             <h3>Tracks</h3>
                             <Label>Limit</Label>
-                            <Input type="number" value={settings.trackLimit} onChange={(e) => { setSettings({ ...settings, trackLimit: parseInt(e.currentTarget.value) }) }} />
+                            <Input
+                                type="number"
+                                value={settings.trackLimit}
+                                onChange={(e) => {
+                                    setSettings({ ...settings, trackLimit: parseInt(e.currentTarget.value) });
+                                }}
+                            />
                             <Label>Offset</Label>
-                            <Input type="number" value={settings.trackOffset} onChange={(e) => { setSettings({ ...settings, trackOffset: parseInt(e.currentTarget.value) }) }} />
+                            <Input
+                                type="number"
+                                value={settings.trackOffset}
+                                onChange={(e) => {
+                                    setSettings({ ...settings, trackOffset: parseInt(e.currentTarget.value) });
+                                }}
+                            />
                             <Label>Search</Label>
-                            <Input type="text" value={settings.trackSearch} onChange={(e) => { setSettings({ ...settings, trackSearch: e.currentTarget.value }) }} />
+                            <Input
+                                type="text"
+                                value={settings.trackSearch}
+                                onChange={(e) => {
+                                    setSettings({ ...settings, trackSearch: e.currentTarget.value });
+                                }}
+                            />
+
+                            <Button className="sidebar-button" onClick={() => setSidebarOpen(false)}>
+                                Close sidebar
+                            </Button>
                         </>
                     )}
-
-
-
                 </SettingsContext.Consumer>
             }
             open={sidebarOpen}
@@ -44,5 +109,4 @@ export const CustomSidebar = () => {
             </Button>
         </Sidebar>
     );
-
-}
+};

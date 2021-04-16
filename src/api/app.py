@@ -2,23 +2,24 @@ import controller.ais_data_controller
 from container import Container
 from flask import Flask, request
 from datetime import datetime
-import yappi
-import atexit
 
-
-# End profiling and save the results into file
-def output_profiler_stats_file():
-    profile_file_name = (
-        "yappi." + datetime.now().isoformat().replace(":", ".") + ".pstat"
-    )
-    func_stats = yappi.get_func_stats()
-    func_stats.save(profile_file_name, type="pstat")
-    yappi.stop()
-    yappi.clear_stats()
-
-
-yappi.start()
-atexit.register(output_profiler_stats_file)
+# import yappi
+# import atexit
+#
+#
+# # End profiling and save the results into file
+# def output_profiler_stats_file():
+#     profile_file_name = (
+#         "yappi." + datetime.now().isoformat().replace(":", ".") + ".pstat"
+#     )
+#     func_stats = yappi.get_func_stats()
+#     func_stats.save(profile_file_name, type="pstat")
+#     yappi.stop()
+#     yappi.clear_stats()
+#
+#
+# yappi.start()
+# atexit.register(output_profiler_stats_file)
 
 container = Container()
 app = Flask(__name__)
