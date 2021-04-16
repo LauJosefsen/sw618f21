@@ -36,6 +36,9 @@ class AisDataService:
         f"postgresql+psycopg2://{__user}:{__pasword}@{__host}:{__port}/{__database}"
     )
 
+    # Cleansing rule removal rate
+    __rule_removal_rate_switch = True
+
     def fetch_all_limit(self, table_name, limit, offset=0):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
@@ -277,6 +280,44 @@ class AisDataService:
         connection.commit()
         connection.close()
 
+    def __before_rule_coordinates(self):
+        if (self.__rule_removal_rate_switch):
+            query_mmsi = """
+                        SELECT DISTINCT mmsi
+                            FROM public.data
+                    """
+
+            query_point = """
+                        SELECT COUNT(*)
+                            FROM public.data
+                    """
+
+            connection = psycopg2.connect(dsn=self.dsn)
+            cursor = connection.cursor()
+
+            # Lets remove all the previous clustering.
+            mmsi_before = cursor.execute(query_mmsi)
+            points_before = cursor.execute(query_point)
+
+            query_non_valid_coords = """
+                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
+                            VALUES ('Non-valid-coordinates', %s, 0, %s, 0);
+                    """
+            query_ship_type = """
+                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
+                            VALUES ('shipType', %s, 0, %s, 0);
+                    """
+            query_both = """
+                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
+                            VALUES ('Non-valid-coordinates/shipType', %s, 0, %s, 0);
+                    """
+
+            cursor.execute(query_non_valid_coords, (mmsi_before, points_before))
+            cursor.execute(query_ship_type, (mmsi_before, points_before))
+            cursor.execute(query_both, (mmsi_before, points_before))
+
+            connection.close()
+
     def cluster_mmsi(self, mmsi):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
@@ -301,6 +342,43 @@ class AisDataService:
                     latitude <= 90 AND latitude >= -90 ORDER BY timestamp
                 """
 
+        if self.__rule_removal_rate_switch:
+            # Rule non valid coords.
+            query_non_valid_coords = """
+                        SELECT COUNT(*) FROM public.data
+                        WHERE mmsi = %s AND
+                        longitude > 180 AND longitude < -180 AND
+                        latitude > 90 AND latitude < -90
+                    """
+            cursor.execute(query_non_valid_coords, mmsi)
+            point_count_after = cursor.fetchall()
+            if point_count_after != 0:
+                query_non_valid_coords_update = """
+                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after + %s, point_count_after=point_count_after + %s 
+                        WHERE rule_name='Non-valid-coordinates'
+                """
+                cursor.execute(query_non_valid_coords_update, 1, point_count_after)
+
+            # Rule ship type
+            query_ship_type = """
+                        SELECT COUNT(*) FROM public.data
+                        WHERE mmsi = %s AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B')
+                    """
+            cursor.execute(query_ship_type, mmsi)
+            point_count_after = cursor.fetchall()
+            if point_count_after != 0:
+                query_non_valid_coords_update = """
+                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after + %s, point_count_after=point_count_after + %s 
+                        WHERE rule_name='shipType'
+                """
+                cursor.execute(query_non_valid_coords_update, 1, point_count_after)
+
+
+            # Rule both
+
+
+
         cursor.execute(query, tuple(mmsi))
         points = [
             AisPoint(**point_dict)
@@ -308,6 +386,8 @@ class AisDataService:
                 AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
             ]
         ]
+
+        # After method which looks at points
 
         tracks = space_data_preprocessing(points)
 
