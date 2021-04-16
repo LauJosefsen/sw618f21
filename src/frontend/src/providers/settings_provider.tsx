@@ -1,39 +1,37 @@
-import React from "react"
+import React from "react";
 
 export interface settings {
-
     // ENC:
-    showEnc: boolean
-    encOffset: number;
-    encLimit: number;
+    showEnc: boolean;
+    encBounds: { [key: string]: [boolean, number, number] };
     encSearch: string;
 
     // TRACKS:
-    showTrack: boolean
+    showTrack: boolean;
     trackOffset: number;
     trackLimit: number;
     trackSearch: string;
+
+    // HEATMAP
+    encIdForHeatMap: number | undefined;
 }
 
 export interface settings_with_setter {
     // Everything that is saved and may be needed in multiple components:
-    setSettings: (arg0: settings) => void
-    settings: settings
-
-
+    setSettings: (arg0: settings) => void;
+    settings: settings;
 }
 export const SettingsContext = React.createContext<settings_with_setter>({
-    setSettings: () => { },
+    setSettings: () => {},
     // These values do not really matter, as they are always overwritten in App.
     settings: {
         encSearch: "",
         showEnc: true,
-        encOffset: 0,
-        encLimit: 5,
+        encBounds: { small: [true, 0, 1000000], medium: [true, 1000000, 10000000], large: [true, 10000000, 10000000000000] },
         showTrack: true,
         trackOffset: 0,
         trackLimit: 0,
-        trackSearch: ""
-    }
-
-})
+        trackSearch: "",
+        encIdForHeatMap: undefined,
+    },
+});

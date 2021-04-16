@@ -1,9 +1,7 @@
-import json
-import shapely.geometry
 from container import Container
 from dependency_injector.wiring import Provide, inject
 from flask import request
-from data_management.make_grid import make_grid
+
 from service.ais_data_service import AisDataService
 from flask import jsonify
 
@@ -54,33 +52,27 @@ def import_enc_data(
 def get_enc_cells(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    limit = request.args.get("limit", default=1, type=int)
-    offset = request.args.get("offset", default=0, type=int)
+    bounds = request.args.get("bounds", default="", type=str)
+    bounds_parsed = [int(split) for split in bounds.split(",")]
 
-    objs = ais_data_service.fetch_specific_limit(
-        "cell_name, cell_title," " ST_AsGeoJson(public.enc_cells.location) as location",
-        "enc_cells",
-        limit,
-        offset,
+    proper_bounds = []
+    for idx, bound in enumerate(bounds_parsed):
+        if idx % 2 == 0:
+            proper_bounds.append([bounds_parsed[idx], bounds_parsed[idx + 1]])
+
+    search = request.args.get("search", default="", type=str)
+
+    return jsonify(
+        ais_data_service.get_enc_cells(area_limits=proper_bounds, search=search)
     )
-    for obj in objs:
-        obj["location"] = json.loads(obj["location"])
-    return jsonify(objs)
 
 
-# TODO This is WIP and we are currently testing on pgadmin
 @inject
 def cluster_heatmap(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
-    return jsonify(
-        {
-            "coordinates": make_grid(
-                shapely.geometry.Point((9, 55)), shapely.geometry.Point((12, 58)), 50000
-            )
-        }
-    )
-    # objs = ais_data_service.make_heatmap(0.05, 50)
+    enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
+    return jsonify(ais_data_service.simple_heatmap(enc_cell_id))
 
 
 @inject
