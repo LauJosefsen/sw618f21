@@ -265,6 +265,7 @@ class AisDataService:
         connection.commit()
         connection.close()
 
+        self.__before_rule_coordinates()
         Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
         # [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
@@ -283,7 +284,7 @@ class AisDataService:
     def __before_rule_coordinates(self):
         if (self.__rule_removal_rate_switch):
             query_mmsi = """
-                        SELECT DISTINCT mmsi
+                        SELECT COUNT(DISTINCT mmsi)
                             FROM public.data
                     """
 
@@ -296,25 +297,30 @@ class AisDataService:
             cursor = connection.cursor()
 
             # Lets remove all the previous clustering.
-            mmsi_before = cursor.execute(query_mmsi)
-            points_before = cursor.execute(query_point)
+            cursor.execute(query_mmsi)
+            mmsi_before = cursor.fetchall()[0]
+            cursor.execute(query_point)
+            points_before = cursor.fetchall()[0]
+
+            cursor.execute("TRUNCATE data_error_rate")
 
             query_non_valid_coords = """
                         INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('Non-valid-coordinates', %s, 0, %s, 0);
+                            VALUES ('Non-valid-coordinates', %s, %s, %s, %s);
                     """
             query_ship_type = """
                         INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('shipType', %s, 0, %s, 0);
+                            VALUES ('shipType', %s, %s, %s, %s);
                     """
             query_both = """
                         INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('Non-valid-coordinates/shipType', %s, 0, %s, 0);
+                            VALUES ('Non-valid-coordinates/shipType', %s, %s, %s, %s);
                     """
 
-            cursor.execute(query_non_valid_coords, (mmsi_before, points_before))
-            cursor.execute(query_ship_type, (mmsi_before, points_before))
-            cursor.execute(query_both, (mmsi_before, points_before))
+            cursor.execute(query_non_valid_coords, (mmsi_before, mmsi_before, points_before, points_before))
+            cursor.execute(query_ship_type, (mmsi_before, mmsi_before, points_before, points_before))
+            cursor.execute(query_both, (mmsi_before, mmsi_before, points_before, points_before))
+            connection.commit()
 
             connection.close()
 
@@ -347,35 +353,54 @@ class AisDataService:
             query_non_valid_coords = """
                         SELECT COUNT(*) FROM public.data
                         WHERE mmsi = %s AND
-                        longitude > 180 AND longitude < -180 AND
-                        latitude > 90 AND latitude < -90
+                        (longitude > 180 OR longitude < -180 OR
+                        latitude > 90 OR latitude < -90)
                     """
             cursor.execute(query_non_valid_coords, mmsi)
-            point_count_after = cursor.fetchall()
-            if point_count_after != 0:
+            point_count_after = cursor.fetchall()[0]
+            if point_count_after[0] != 0:
                 query_non_valid_coords_update = """
-                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after + %s, point_count_after=point_count_after + %s 
+                    UPDATE data_error_rate SET point_count_after=point_count_after - %s 
                         WHERE rule_name='Non-valid-coordinates'
                 """
-                cursor.execute(query_non_valid_coords_update, 1, point_count_after)
+                cursor.execute(query_non_valid_coords_update, point_count_after)
+                connection.commit()
 
             # Rule ship type
             query_ship_type = """
                         SELECT COUNT(*) FROM public.data
-                        WHERE mmsi = %s AND
+                        WHERE mmsi = %s AND NOT
                         (mobile_type = 'Class A' OR mobile_type = 'Class B')
                     """
             cursor.execute(query_ship_type, mmsi)
-            point_count_after = cursor.fetchall()
-            if point_count_after != 0:
+            point_count_after = cursor.fetchall()[0]
+            if point_count_after[0] != 0:
                 query_non_valid_coords_update = """
-                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after + %s, point_count_after=point_count_after + %s 
+                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after - %s, point_count_after=point_count_after - %s 
                         WHERE rule_name='shipType'
                 """
-                cursor.execute(query_non_valid_coords_update, 1, point_count_after)
-
+                cursor.execute(query_non_valid_coords_update, (1, point_count_after))
 
             # Rule both
+            query_both = """
+                        SELECT COUNT(*) FROM public.data
+                        WHERE mmsi = %s AND
+                        ((longitude > 180 OR longitude < -180 OR
+                        latitude > 90 OR latitude < -90)
+                        OR NOT
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
+                    """
+            cursor.execute(query_both, mmsi)
+            point_count_after = cursor.fetchall()[0]
+            if point_count_after[0] != 0:
+                query_both_update = """
+                                UPDATE data_error_rate SET mmsi_count_after=0, point_count_after=point_count_after - %s 
+                                    WHERE rule_name='Non-valid-coordinates/shipType'
+                            """
+                cursor.execute(query_both_update, point_count_after)
+
+
+
 
 
 
