@@ -396,9 +396,9 @@ class AisDataService:
                 (
                     'Non-valid-coordinates', 
                     (SELECT after_sar_mmsi FROM error_rates),
-                    (SELECT after_ship_type_mmsi FROM error_rates),
+                    (SELECT after_invalid_coord_mmsi FROM error_rates),
                     (SELECT after_sar_point FROM error_rates),
-                    (SELECT after_ship_type_point FROM error_rates)
+                    (SELECT after_invalid_coord_point FROM error_rates)
                 ),(
                     'shipType', 
                     (SELECT after_sar_mmsi FROM error_rates),
