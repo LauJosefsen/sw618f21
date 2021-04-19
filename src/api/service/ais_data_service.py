@@ -123,11 +123,9 @@ class AisDataService:
 
     def import_ais_data(self):
         print("Importing ais data..")
-        for entry in os.scandir("./import"):
-            if not entry.is_dir() and ".csv" in entry.name:
-                print(f"Importing {entry.name}")
-                self.import_csv_file(entry.path)
-                print(f"Done importing {entry.name}")
+        path_list = [entry.path for entry in os.scandir("./import") if not entry.is_dir() and ".csv" in entry.name]
+
+        Parallel(n_jobs=16)(delayed(self.import_csv_file)(path) for path in path_list)
 
     def import_csv_file(self, csv_fname):
         def apply_string_format(str_input: str):
