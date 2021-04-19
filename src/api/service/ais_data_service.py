@@ -305,7 +305,87 @@ class AisDataService:
             cursor.execute("TRUNCATE data_error_rate")
 
 
-            query_non_valid_coords = """
+            query_inserts = """
+                WITH error_rates AS (
+                SELECT 
+                    count(DISTINCT mmsi) as begin_mmsi,
+                    count(*) as begin_point,
+                    count(DISTINCT mmsi) FILTER 
+                        (
+                            WHERE mmsi < 111000000 OR mmsi > 111999999
+                        ) as after_sar_mmsi,
+                    count(*) FILTER 
+                        (
+                            WHERE mmsi < 111000000 OR mmsi > 111999999
+                        ) as after_sar_point,
+                    count(DISTINCT mmsi) FILTER 
+                        (
+                            WHERE  mmsi < 111000000 OR mmsi > 111999999
+                            AND
+                            (
+                                mobile_type = 'Class A' OR mobile_type = 'Class B'
+                            )
+                        ) as after_ship_type_mmsi,
+                    count(*) FILTER 
+                        (
+                            WHERE  mmsi < 111000000 OR mmsi > 111999999
+                            AND
+                            (
+                                mobile_type = 'Class A' OR mobile_type = 'Class B'
+                            )
+                        ) as after_ship_type_point,
+                    count(DISTINCT mmsi) FILTER
+                        (
+                            WHERE mmsi < 111000000 OR mmsi > 111999999
+                            AND NOT
+                            (
+                                (
+                                    longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
+                                )
+                            )
+                        ) as after_invalid_coord_mmsi,
+                    count(*) FILTER
+                        (
+                            WHERE mmsi < 111000000 OR mmsi > 111999999
+                            AND NOT
+                            (
+                                (
+                                    longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
+                                )
+                            )
+                        ) as after_invalid_coord_point,
+                    count(DISTINCT mmsi) FILTER 
+                        (
+                            WHERE 
+                            mmsi < 111000000 OR mmsi > 111999999
+                            AND
+                            (
+                                (
+                                    longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
+                                )
+                                OR
+                                (
+                                    mobile_type = 'Class A' OR mobile_type = 'Class B'
+                                )
+                            )
+                        ) as after_invalid_coord_and_ship_type_mmsi,
+                    count(*) FILTER 
+                        (
+                            WHERE 
+                            mmsi < 111000000 OR mmsi > 111999999
+                            AND
+                            (
+                                (
+                                    longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
+                                )
+                                OR
+                                (
+                                    mobile_type = 'Class A' OR mobile_type = 'Class B'
+                                )
+                            )
+                        ) as after_invalid_coord_and_ship_type_point
+                FROM DATA
+                )
                 INSERT INTO data_error_rate (
                     rule_name,
                     mmsi_count_before,
@@ -315,100 +395,40 @@ class AisDataService:
                 ) VALUES 
                 (
                     'Non-valid-coordinates', 
-                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND NOT(
-                        (longitude > 180 OR longitude < -180 OR
-                        latitude > 90 OR latitude < -90))),
-                    (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                    (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND  NOT(    
-                        (longitude > 180 OR longitude < -180 OR
-                        latitude > 90 OR latitude < -90)))
-                ),
-                (
-                               'shipType', 
-                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B')),
-                               (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                               (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
-                           ),
-                           (
-                                           'Non-valid-coordinates/shipType', 
-                                           (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                                           (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
-                                                (NOT ((longitude > 180 OR longitude < -180 OR
-                                                latitude > 90 OR latitude < -90)
-                                                AND
-                                                (mobile_type = 'Class A' OR mobile_type = 'Class B')))),
-                                           (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                                           (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
-                                                (NOT ((longitude > 180 OR longitude < -180 OR
-                                                latitude > 90 OR latitude < -90)
-                                                OR
-                                                (mobile_type = 'Class A' OR mobile_type = 'Class B'))))
+                    (SELECT after_sar_mmsi FROM error_rates),
+                    (SELECT after_ship_type_mmsi FROM error_rates),
+                    (SELECT after_sar_point FROM error_rates),
+                    (SELECT after_ship_type_point FROM error_rates)
+                ),(
+                    'shipType', 
+                    (SELECT after_sar_mmsi FROM error_rates),
+                    (SELECT after_ship_type_mmsi FROM error_rates),
+                    (SELECT after_sar_point FROM error_rates),
+                    (SELECT after_ship_type_point FROM error_rates)
+                ),(
+                    'Non-valid-coordinates/shipType', 
+                    (SELECT after_sar_mmsi FROM error_rates),
+                    (SELECT after_invalid_coord_and_ship_type_mmsi FROM error_rates),
+                    (SELECT after_ship_type_point FROM error_rates),
+                    (SELECT after_invalid_coord_and_ship_type_point FROM error_rates)
                ),(
                     'mmsiIsSar', 
-                    (SELECT count(DISTINCT mmsi) FROM data),
-                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                    (SELECT count(*) FROM data),
-                    (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999)
-                ),
-                ('thresholdCompleteness', 0, 0, 0, 0)
+                    (SELECT begin_mmsi FROM error_rates),
+                    (SELECT after_sar_mmsi FROM error_rates),
+                    (SELECT begin_point FROM error_rates),
+                    (SELECT after_sar_point FROM error_rates)
+                ),(
+                    'thresholdCompleteness',
+                    0,
+                    0,
+                    0,
+                    0
+                )
             """
 
-            query_ship_type = """
-                           INSERT INTO data_error_rate (
-                               rule_name,
-                               mmsi_count_before,
-                               mmsi_count_after,
-                               point_count_before,
-                               point_count_after
-                           ) VALUES 
-                           (
-                               'shipType', 
-                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B')),
-                               (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
-                               (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
-                           ) 
-                       """
-            query_both = """
-                                       INSERT INTO data_error_rate (
-                                           rule_name,
-                                           mmsi_count_before,
-                                           mmsi_count_after,
-                                           point_count_before,
-                                           point_count_after
-                                       ) VALUES 
-                                       
-                                   """
-            query_threshold_completeness = """
-                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('thresholdCompleteness', 0, 0, 0, 0);
-                    """
-
-            query_mmsi_is_sar = """
-                INSERT INTO data_error_rate (
-                    rule_name,
-                    mmsi_count_before,
-                    mmsi_count_after,
-                    point_count_before,
-                    point_count_after
-                ) VALUES 
-                
-            """
-
-            cursor.execute(query_non_valid_coords, (mmsi_before, mmsi_before, points_before, points_before))
-            cursor.execute(query_ship_type, (mmsi_before, mmsi_before, points_before, points_before))
-            cursor.execute(query_both, (mmsi_before, mmsi_before, points_before, points_before))
-            cursor.execute(query_threshold_completeness)
-            cursor.execute(query_mmsi_is_sar)
+            cursor.execute(query_inserts)
 
             connection.commit()
-
             connection.close()
 
     def cluster_mmsi(self, mmsi):
@@ -434,57 +454,6 @@ class AisDataService:
                     longitude <= 180 AND longitude >=-180 AND
                     latitude <= 90 AND latitude >= -90 ORDER BY timestamp
                 """
-
-        if self.__rule_removal_rate_switch:
-            # Rule non valid coords.
-            query_non_valid_coords = """
-                        SELECT COUNT(*) FROM public.data
-                        WHERE mmsi = %s AND
-                        (longitude > 180 OR longitude < -180 OR
-                        latitude > 90 OR latitude < -90)
-                    """
-            cursor.execute(query_non_valid_coords, mmsi)
-            point_count_after = cursor.fetchall()[0]
-            if point_count_after[0] != 0:
-                query_non_valid_coords_update = """
-                    UPDATE data_error_rate SET point_count_after=point_count_after - %s 
-                        WHERE rule_name='Non-valid-coordinates'
-                """
-                cursor.execute(query_non_valid_coords_update, point_count_after)
-                connection.commit()
-
-            # Rule ship type
-            query_ship_type = """
-                        SELECT COUNT(*) FROM public.data
-                        WHERE mmsi = %s AND NOT
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B')
-                    """
-            cursor.execute(query_ship_type, mmsi)
-            point_count_after = cursor.fetchall()[0]
-            if point_count_after[0] != 0:
-                query_non_valid_coords_update = """
-                    UPDATE data_error_rate SET mmsi_count_after=mmsi_count_after - %s, point_count_after=point_count_after - %s 
-                        WHERE rule_name='shipType'
-                """
-                cursor.execute(query_non_valid_coords_update, (1, point_count_after))
-
-            # Rule both
-            query_both = """
-                        SELECT COUNT(*) FROM public.data
-                        WHERE mmsi = %s AND
-                        ((longitude > 180 OR longitude < -180 OR
-                        latitude > 90 OR latitude < -90)
-                        OR NOT
-                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
-                    """
-            cursor.execute(query_both, mmsi)
-            point_count_after = cursor.fetchall()[0]
-            if point_count_after[0] != 0:
-                query_both_update = """
-                                UPDATE data_error_rate SET mmsi_count_after=0, point_count_after=point_count_after - %s 
-                                    WHERE rule_name='Non-valid-coordinates/shipType'
-                            """
-                cursor.execute(query_both_update, point_count_after)
 
         cursor.execute(query, tuple(mmsi))
         points = [
