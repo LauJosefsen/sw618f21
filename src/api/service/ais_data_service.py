@@ -285,12 +285,12 @@ class AisDataService:
         if (self.__rule_removal_rate_switch):
             query_mmsi = """
                         SELECT COUNT(DISTINCT mmsi)
-                            FROM public.data
+                            FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999
                     """
 
             query_point = """
                         SELECT COUNT(*)
-                            FROM public.data
+                            FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999 
                     """
 
             connection = psycopg2.connect(dsn=self.dsn)
@@ -304,22 +304,109 @@ class AisDataService:
 
             cursor.execute("TRUNCATE data_error_rate")
 
+
             query_non_valid_coords = """
-                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('Non-valid-coordinates', %s, %s, %s, %s);
-                    """
+                INSERT INTO data_error_rate (
+                    rule_name,
+                    mmsi_count_before,
+                    mmsi_count_after,
+                    point_count_before,
+                    point_count_after
+                ) VALUES 
+                (
+                    'Non-valid-coordinates', 
+                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND NOT(
+                        (longitude > 180 OR longitude < -180 OR
+                        latitude > 90 OR latitude < -90))),
+                    (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                    (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND  NOT(    
+                        (longitude > 180 OR longitude < -180 OR
+                        latitude > 90 OR latitude < -90)))
+                ),
+                (
+                               'shipType', 
+                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B')),
+                               (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                               (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
+                           ),
+                           (
+                                           'Non-valid-coordinates/shipType', 
+                                           (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                                           (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
+                                                (NOT ((longitude > 180 OR longitude < -180 OR
+                                                latitude > 90 OR latitude < -90)
+                                                AND
+                                                (mobile_type = 'Class A' OR mobile_type = 'Class B')))),
+                                           (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                                           (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
+                                                (NOT ((longitude > 180 OR longitude < -180 OR
+                                                latitude > 90 OR latitude < -90)
+                                                OR
+                                                (mobile_type = 'Class A' OR mobile_type = 'Class B'))))
+               ),(
+                    'mmsiIsSar', 
+                    (SELECT count(DISTINCT mmsi) FROM data),
+                    (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                    (SELECT count(*) FROM data),
+                    (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999)
+                ),
+                ('thresholdCompleteness', 0, 0, 0, 0)
+            """
+
             query_ship_type = """
-                        INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('shipType', %s, %s, %s, %s);
-                    """
+                           INSERT INTO data_error_rate (
+                               rule_name,
+                               mmsi_count_before,
+                               mmsi_count_after,
+                               point_count_before,
+                               point_count_after
+                           ) VALUES 
+                           (
+                               'shipType', 
+                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                               (SELECT count(DISTINCT mmsi) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B')),
+                               (SELECT count(*) FROM data WHERE mmsi < 111000000 OR mmsi > 111999999),
+                               (SELECT count(*) FROM data WHERE  mmsi < 111000000 OR mmsi > 111999999 AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B'))
+                           ) 
+                       """
             query_both = """
+                                       INSERT INTO data_error_rate (
+                                           rule_name,
+                                           mmsi_count_before,
+                                           mmsi_count_after,
+                                           point_count_before,
+                                           point_count_after
+                                       ) VALUES 
+                                       
+                                   """
+            query_threshold_completeness = """
                         INSERT INTO data_error_rate (rule_name, mmsi_count_before, mmsi_count_after, point_count_before, point_count_after)
-                            VALUES ('Non-valid-coordinates/shipType', %s, %s, %s, %s);
+                            VALUES ('thresholdCompleteness', 0, 0, 0, 0);
                     """
+
+            query_mmsi_is_sar = """
+                INSERT INTO data_error_rate (
+                    rule_name,
+                    mmsi_count_before,
+                    mmsi_count_after,
+                    point_count_before,
+                    point_count_after
+                ) VALUES 
+                
+            """
 
             cursor.execute(query_non_valid_coords, (mmsi_before, mmsi_before, points_before, points_before))
             cursor.execute(query_ship_type, (mmsi_before, mmsi_before, points_before, points_before))
             cursor.execute(query_both, (mmsi_before, mmsi_before, points_before, points_before))
+            cursor.execute(query_threshold_completeness)
+            cursor.execute(query_mmsi_is_sar)
+
             connection.commit()
 
             connection.close()
@@ -399,11 +486,6 @@ class AisDataService:
                             """
                 cursor.execute(query_both_update, point_count_after)
 
-
-
-
-
-
         cursor.execute(query, tuple(mmsi))
         points = [
             AisPoint(**point_dict)
@@ -412,9 +494,23 @@ class AisDataService:
             ]
         ]
 
+        count_before = len(points)
         # After method which looks at points
-
         tracks = space_data_preprocessing(points)
+
+        count = sum(len(track) for track in tracks)
+
+        update_threshold_query = """
+        UPDATE data_error_rate SET
+            mmsi_count_before = mmsi_count_before + 1,
+            mmsi_count_after = mmsi_count_after + %s,
+            point_count_before = point_count_before + %s,
+            point_count_after = point_count_after + %s
+        WHERE rule_name = 'thresholdCompleteness';
+        """
+        cursor.execute(update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count))
+
+
 
         # insert tracks and points:
         self.__insert_tracks(ship_id, tracks, cursor)
