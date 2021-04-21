@@ -126,7 +126,11 @@ class AisDataService:
 
     def import_ais_data(self):
         print("Importing ais data..")
-        path_list = [entry.path for entry in os.scandir("./import") if not entry.is_dir() and ".csv" in entry.name]
+        path_list = [
+            entry.path
+            for entry in os.scandir("./import")
+            if not entry.is_dir() and ".csv" in entry.name
+        ]
 
         Parallel(n_jobs=16)(delayed(self.import_csv_file)(path) for path in path_list)
 
@@ -328,7 +332,6 @@ class AisDataService:
 
         cursor.execute("TRUNCATE data_error_rate")
 
-
         query_inserts = """
             WITH error_rates AS (
             SELECT 
@@ -501,9 +504,9 @@ class AisDataService:
             point_count_after = point_count_after + %s
         WHERE rule_name = 'thresholdCompleteness';
         """
-        cursor.execute(update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count))
-
-
+        cursor.execute(
+            update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count)
+        )
 
         # insert tracks and points:
         self.__insert_tracks(ship_id, tracks, cursor)
