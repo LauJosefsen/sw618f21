@@ -334,18 +334,18 @@ class AisDataService:
 
         query_inserts = """
             WITH error_rates AS (
-            SELECT 
+            SELECT
                 count(DISTINCT mmsi) as begin_mmsi,
                 count(*) as begin_point,
-                count(DISTINCT mmsi) FILTER 
+                count(DISTINCT mmsi) FILTER
                     (
                         WHERE mmsi < 111000000 OR mmsi > 111999999
                     ) as after_sar_mmsi,
-                count(*) FILTER 
+                count(*) FILTER
                     (
                         WHERE mmsi < 111000000 OR mmsi > 111999999
                     ) as after_sar_point,
-                count(DISTINCT mmsi) FILTER 
+                count(DISTINCT mmsi) FILTER
                     (
                         WHERE  mmsi < 111000000 OR mmsi > 111999999
                         AND
@@ -353,7 +353,7 @@ class AisDataService:
                             mobile_type = 'Class A' OR mobile_type = 'Class B'
                         )
                     ) as after_ship_type_mmsi,
-                count(*) FILTER 
+                count(*) FILTER
                     (
                         WHERE  mmsi < 111000000 OR mmsi > 111999999
                         AND
@@ -381,9 +381,9 @@ class AisDataService:
                             )
                         )
                     ) as after_invalid_coord_point,
-                count(DISTINCT mmsi) FILTER 
+                count(DISTINCT mmsi) FILTER
                     (
-                        WHERE 
+                        WHERE
                         mmsi < 111000000 OR mmsi > 111999999
                         AND NOT
                         (
@@ -396,9 +396,9 @@ class AisDataService:
                             )
                         )
                     ) as after_invalid_coord_and_ship_type_mmsi,
-                count(*) FILTER 
+                count(*) FILTER
                     (
-                        WHERE 
+                        WHERE
                         mmsi < 111000000 OR mmsi > 111999999
                         AND NOT
                         (
@@ -419,27 +419,27 @@ class AisDataService:
                 mmsi_count_after,
                 point_count_before,
                 point_count_after
-            ) VALUES 
+            ) VALUES
             (
-                'Non-valid-coordinates', 
+                'Non-valid-coordinates',
                 (SELECT after_sar_mmsi FROM error_rates),
                 (SELECT after_invalid_coord_mmsi FROM error_rates),
                 (SELECT after_sar_point FROM error_rates),
                 (SELECT after_invalid_coord_point FROM error_rates)
             ),(
-                'shipType', 
+                'shipType',
                 (SELECT after_sar_mmsi FROM error_rates),
                 (SELECT after_ship_type_mmsi FROM error_rates),
                 (SELECT after_sar_point FROM error_rates),
                 (SELECT after_ship_type_point FROM error_rates)
             ),(
-                'Non-valid-coordinates/shipType', 
+                'Non-valid-coordinates/shipType',
                 (SELECT after_sar_mmsi FROM error_rates),
                 (SELECT after_invalid_coord_and_ship_type_mmsi FROM error_rates),
                 (SELECT after_ship_type_point FROM error_rates),
                 (SELECT after_invalid_coord_and_ship_type_point FROM error_rates)
            ),(
-                'mmsiIsSar', 
+                'mmsiIsSar',
                 (SELECT begin_mmsi FROM error_rates),
                 (SELECT after_sar_mmsi FROM error_rates),
                 (SELECT begin_point FROM error_rates),
