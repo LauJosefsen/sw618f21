@@ -1,6 +1,7 @@
 import configparser
 import csv
 import json
+import multiprocessing
 import os
 import statistics
 from datetime import datetime
@@ -11,6 +12,7 @@ import pandas as pd
 import psycopg2
 import tqdm as tqdm
 from joblib import Parallel, delayed
+from pqdm.processes import pqdm
 from psycopg2.extensions import AsIs
 
 from data_management.course_cluster import space_data_preprocessing
@@ -129,7 +131,7 @@ class AisDataService:
             if not entry.is_dir() and ".csv" in entry.name
         ]
 
-        Parallel(n_jobs=16)(delayed(self.import_csv_file)(path) for path in path_list)
+        Parallel(n_jobs=multiprocessing.cpu_count())(delayed(self.import_csv_file)(path) for path in path_list)
 
     def import_csv_file(self, csv_fname):
         def apply_string_format(str_input: str):
@@ -296,7 +298,10 @@ class AisDataService:
         cursor = connection.cursor()
 
         # Lets remove all the previous clustering.
+        cursor.execute("UPDATE heatmap_trafic_density_1000m SET intensity = 0")
         cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
+
+        print("[CLUSTER] Cleared previous cluster.")
 
         query = """
             SELECT DISTINCT mmsi FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999
@@ -304,11 +309,16 @@ class AisDataService:
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
+        print("[CLUSTER] Got mmsi distinct.")
+
         connection.commit()
         connection.close()
 
         self.__before_rule_coordinates()
-        Parallel(n_jobs=16)(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
+
+        print("[CLUSTER] Cleared error_rates.")
+        pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
+        # Parallel(n_jobs=multiprocessing.cpu_count())(delayed(self.cluster_mmsi)(mmsi) for mmsi in mmsi_list)
         # [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
 
         connection = psycopg2.connect(dsn=self.dsn)
