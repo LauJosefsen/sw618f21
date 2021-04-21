@@ -35,9 +35,6 @@ class AisDataService:
         f"postgresql+psycopg2://{__user}:{__pasword}@{__host}:{__port}/{__database}"
     )
 
-    # Cleansing rule removal rate
-    __rule_removal_rate_switch = True
-
     def fetch_all_limit(self, table_name, limit, offset=0):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
