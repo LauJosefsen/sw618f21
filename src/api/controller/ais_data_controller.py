@@ -80,3 +80,9 @@ def find_ais_time_median(
     ais_data_service: AisDataService = Provide[Container.ais_data_service],
 ):
     return jsonify(ais_data_service.find_ais_time_median())
+
+@inject
+def find_mmsi_without_x_transmission_response(
+        ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    return jsonify(ais_data_service.find_mmsi_without_x_transmission_response())

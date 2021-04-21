@@ -49,6 +49,11 @@ app.add_url_rule(
     "find_ais_time_median",
     controller.ais_data_controller.find_ais_time_median,
 )
+app.add_url_rule(
+    "/find_mmsi_without_x_transmission_response",
+    "find_mmsi_without_x_transmission_response",
+    controller.ais_data_controller.find_mmsi_without_x_transmission_response,
+)
 
 
 def shutdown_server():

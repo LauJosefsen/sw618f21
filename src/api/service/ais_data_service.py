@@ -650,3 +650,22 @@ class AisDataService:
         ]
 
         return {"enc": enc_cell, "heatmap_data": points_formatted}
+
+    def find_mmsi_without_x_transmission_response(self):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+        query = """
+                SELECT mmsi, timestamp
+                    FROM public.data 
+                    GROUP BY mmsi, timestamp
+                    LIMIT 100000;
+        """
+
+        cursor.execute(query)
+        #ships = cursor.fetchall()[1]
+        ships = cursor.fetchall()
+        connection.commit
+        connection.close()
+
+        return ships
+
