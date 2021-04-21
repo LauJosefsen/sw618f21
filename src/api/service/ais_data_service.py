@@ -358,12 +358,12 @@ class AisDataService:
                         (
                             WHERE 
                             mmsi < 111000000 OR mmsi > 111999999
-                            AND
+                            AND NOT
                             (
                                 (
                                     longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
                                 )
-                                OR
+                                AND NOT
                                 (
                                     mobile_type = 'Class A' OR mobile_type = 'Class B'
                                 )
@@ -373,12 +373,12 @@ class AisDataService:
                         (
                             WHERE 
                             mmsi < 111000000 OR mmsi > 111999999
-                            AND
+                            AND NOT
                             (
                                 (
                                     longitude > 180 OR longitude < -180 OR latitude > 90 OR latitude < -90
                                 )
-                                OR
+                                AND NOT
                                 (
                                     mobile_type = 'Class A' OR mobile_type = 'Class B'
                                 )
