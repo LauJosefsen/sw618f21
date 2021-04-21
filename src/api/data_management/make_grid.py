@@ -7,6 +7,7 @@ import shapely
 from pyproj import Transformer
 from shapely.geometry import Polygon
 
+
 def make_grid_mercator(sw: geopy.point, ne: geopy.point, horizontal_steps: int):
     p_ll = pyproj.Proj(init="epsg:4326")
     p_mt = pyproj.Proj(init="epsg:3857")
@@ -36,14 +37,18 @@ def make_grid_mercator(sw: geopy.point, ne: geopy.point, horizontal_steps: int):
         while cur_l < ne[0]:
             east_point = cur_l + horizontal_stepsize
 
-            grid.append(shapely.geometry.mapping(Polygon(
-                [
-                    transformer.transform(cur_l, south),  # sw
-                    transformer.transform(cur_l, north_point),  # nw
-                    transformer.transform(east_point, north_point),  # ne
-                    transformer.transform(east_point, south)  # se
-                ]
-            )))
+            grid.append(
+                shapely.geometry.mapping(
+                    Polygon(
+                        [
+                            transformer.transform(cur_l, south),  # sw
+                            transformer.transform(cur_l, north_point),  # nw
+                            transformer.transform(east_point, north_point),  # ne
+                            transformer.transform(east_point, south),  # se
+                        ]
+                    )
+                )
+            )
             cur_l = east_point
 
         south = north_point
@@ -72,20 +77,24 @@ def make_grid_meters(sw: geopy.point, ne: geopy.point, step_size: float):
             cur_l = cur_l + longitude_difference
         distance = cur_l - current.longitude
         reg_distance = ne.longitude - current.longitude
-        overshoot = distance-reg_distance
+        overshoot = distance - reg_distance
 
-        cur_l = current.longitude - (overshoot/2)
+        cur_l = current.longitude - (overshoot / 2)
         while cur_l < ne.longitude:
             east_point = cur_l + longitude_difference
 
-            grid.append(shapely.geometry.mapping(Polygon(
-                [
-                    [current.latitude, cur_l],  # sw
-                    [next_point.latitude, cur_l],  # nw
-                    [next_point.latitude, east_point],  # ne
-                    [current.latitude, east_point]  # se
-                ]
-            )))
+            grid.append(
+                shapely.geometry.mapping(
+                    Polygon(
+                        [
+                            [current.latitude, cur_l],  # sw
+                            [next_point.latitude, cur_l],  # nw
+                            [next_point.latitude, east_point],  # ne
+                            [current.latitude, east_point],  # se
+                        ]
+                    )
+                )
+            )
             cur_l = east_point
 
         current = next_point
@@ -107,14 +116,18 @@ def make_grid_degrees(sw: geopy.point, ne: geopy.point, step_size: float):
         while longitude_w < ne.longitude:
             next_longitude_w = longitude_w + step_size
 
-            grid.append(shapely.geometry.mapping(Polygon(
-                [
-                    [latitude_s, longitude_w],  # sw
-                    [next_latitude_s, longitude_w],  # nw
-                    [next_latitude_s, next_longitude_w],  # ne
-                    [latitude_s, next_longitude_w]  # se
-                ]
-            )))
+            grid.append(
+                shapely.geometry.mapping(
+                    Polygon(
+                        [
+                            [latitude_s, longitude_w],  # sw
+                            [next_latitude_s, longitude_w],  # nw
+                            [next_latitude_s, next_longitude_w],  # ne
+                            [latitude_s, next_longitude_w],  # se
+                        ]
+                    )
+                )
+            )
 
             longitude_w = next_longitude_w
 

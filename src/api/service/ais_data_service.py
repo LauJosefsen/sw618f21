@@ -11,7 +11,6 @@ import pandas as pd
 import psycopg2
 import tqdm as tqdm
 from joblib import Parallel, delayed
-from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extensions import AsIs
 
 from data_management.course_cluster import space_data_preprocessing
@@ -127,11 +126,9 @@ class AisDataService:
 
     def import_ais_data(self):
         print("Importing ais data..")
-        for entry in os.scandir("./import"):
-            if not entry.is_dir() and ".csv" in entry.name:
-                print(f"Importing {entry.name}")
-                self.import_csv_file(entry.path)
-                print(f"Done importing {entry.name}")
+        path_list = [entry.path for entry in os.scandir("./import") if not entry.is_dir() and ".csv" in entry.name]
+
+        Parallel(n_jobs=16)(delayed(self.import_csv_file)(path) for path in path_list)
 
     def import_csv_file(self, csv_fname):
         def apply_string_format(str_input: str):
@@ -212,18 +209,60 @@ class AisDataService:
             x[col[0]] = row[key]
         return x
 
+    def get_enc_cells(self, area_limits=None, search=""):
+
+        if area_limits is None:
+            area_limits = []
+        if search == "":
+            search = "%"
+        else:
+            search = f"%{search}%"
+
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+
+        query = """
+                SELECT * FROM (
+                    SELECT
+                    *,
+                    ST_AsGeoJson(public.enc_cells.location) AS location,
+                    ROUND(CAST(ST_Area(ST_Transform(location, 3857))/1000000 AS NUMERIC), 2) AS area
+                    FROM enc_cells
+                    WHERE cell_title LIKE %s OR cell_name LIKE %s
+                ) as enc
+                ORDER BY enc.area DESC;
+                """
+
+        cursor.execute(
+            query,
+            (search, search),
+        )
+        data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        for obj in data:
+            obj["location"] = json.loads(obj["location"])
+
+        filtered_data = []
+        for enc in data:
+            for limit in area_limits:
+                if limit[0] < int(enc["area"]) < limit[1]:
+                    filtered_data.append(enc)
+
+        return filtered_data
+
     def get_tracks(self, limit, offset, simplify_tolerance=0, search_mmsi=None):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
 
         query = """
         SELECT
-            t.id, t.ship_mmsi as mmsi, MIN(p.timestamp) as timestamp_begin,
-            MAX(p.timestamp) as timestamp_end,
-            ST_AsGeoJson(ST_FlipCoordinates(ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s)))
-                as coordinates
+            t.id, t.ship_mmsi AS mmsi, MIN(p.timestamp) AS timestamp_begin,
+            MAX(p.timestamp) AS timestamp_end,
+            ST_AsGeoJson(ST_FlipCoordinates(
+                ST_Simplify(ST_MakeLine(p.location ORDER BY p.timestamp), %s)
+                )) AS coordinates
         FROM public.track AS t
-        JOIN public.points as p ON t.id=p.track_id
+        JOIN public.points AS p ON t.id=p.track_id
         WHERE t.ship_mmsi IN (SELECT mmsi FROM SHIP as s WHERE
             (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) > 1)
         AND (%s OR t.ship_mmsi = %s)
@@ -578,7 +617,7 @@ class AisDataService:
     def find_time_difference(self, a, b):
         return int((b - a).total_seconds())
 
-    def simple_heatmap(self, enc_cell_id: str):
+    def simple_heatmap(self, enc_cell_id: int):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
         query = """
@@ -597,26 +636,30 @@ class AisDataService:
         points = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
 
         query = """
-                    SELECT cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location FROM enc_cells WHERE cell_id = %s
+                    SELECT
+                    cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location
+                    FROM enc_cells WHERE cell_id = %s
                     """
         cursor.execute(query, (enc_cell_id,))
 
-        enc_cells = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+        enc_cells = [
+            AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
+        ]
         if len(enc_cells) != 1:
             return {}
         enc_cell = enc_cells[0]
-        enc_cell['location'] = json.loads(enc_cell['location'])
+        enc_cell["location"] = json.loads(enc_cell["location"])
 
         connection.close()
 
         for point in points:
-            point['grid_point'] = json.loads(point['grid_point'])
+            point["grid_point"] = json.loads(point["grid_point"])
 
         points_formatted = [
             [
-                point['grid_point']['coordinates'][0],
-                point['grid_point']['coordinates'][1],
-                point['intensity']
+                point["grid_point"]["coordinates"][0],
+                point["grid_point"]["coordinates"][1],
+                point["intensity"],
             ]
             for point in points
         ]
