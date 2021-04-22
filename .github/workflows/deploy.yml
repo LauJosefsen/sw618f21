@@ -1,3 +1,5 @@
+name: Deploy code base
+
 on:
   workflow_dispatch:
 
@@ -14,7 +16,7 @@ jobs:
           key: ${{ secrets.ais_pkey }}
           port: 22
           script: |
-            cd /home/fresser/sw618f21/
+            cd /home/ais/sw618f21/
             git pull origin ${GITHUB_REF##*/}
             docker-compose -f docker-compose.prod.yml build
             docker-compose up -d
