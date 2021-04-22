@@ -13,7 +13,7 @@ COPY tsconfig.json ./
 RUN npm install -g npm@7.10.0
 RUN npm install --silent
 RUN npm install react-scripts@4.0.3 -g
-RUN npm install -g serve
+RUN npm install -g serve@11.3.2
 
 RUN ["npm", "run", "build"]
 
