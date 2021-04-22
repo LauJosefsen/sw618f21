@@ -1,0 +1,21 @@
+# pull official base image
+FROM node:15.14.0-alpine
+
+# set working directory
+WORKDIR /frontend
+
+# install app dependencies
+COPY ./src ./src
+COPY ./public ./public
+COPY package.json ./
+COPY package-lock.json ./
+COPY tsconfig.json ./
+RUN npm install -g npm@7.10.0
+RUN npm install --silent
+RUN npm install react-scripts@4.0.3 -g
+RUN npm install -g serve@11.3.2
+
+RUN ["npm", "run", "build"]
+
+# start app
+CMD ["serve", "-s", "build"]

@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  api:
+    container_name: api
+    build: ./src/api
+    ports:
+      - "5000:5000"
+    volumes: ['./src/api:/api']
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_DEBUG=0
+  react:
+    container_name: react
+    build:
+        context: ./src/frontend/
+        dockerfile: ./Dockerfile.prod
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes: ['./src/frontend/src:/frontend/src', './src/frontend/public:/frontend/public']
+    ports:
+      - "3000:3000"
