@@ -13,3 +13,4 @@ pyproj
 shapely
 tqdm
 simplejson
+uWSGI
