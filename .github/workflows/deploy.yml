@@ -15,6 +15,6 @@ jobs:
           port: 22
           script: |
             cd /home/fresser/sw618f21/
-            git pull origin master
+            git pull origin ${GITHUB_REF##*/}
             docker-compose -f docker-compose.prod.yml build
             docker-compose up -d
