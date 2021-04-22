@@ -7,6 +7,7 @@ import { useQuery } from "react-query";
 import { Button } from "reactstrap";
 import { SettingsContext } from "../../providers/settings_provider";
 import { CustomSpinner } from "../custom_spinner";
+import {config} from "../../helpers/constants";
 
 interface Props {
     enc_cell_id: number;
@@ -14,7 +15,7 @@ interface Props {
 
 export const SimpleHeatMap = (props: Props) => {
     const { isLoading: loading, error, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
-        fetch(`http://localhost:5000/cluster-heatmap?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
+        fetch(`${config.api_url}/cluster-heatmap?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();

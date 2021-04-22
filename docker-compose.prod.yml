@@ -2,7 +2,9 @@ version: "3.9"
 services:
   api:
     container_name: api
-    build: ./src/api
+    build:
+      context: ./src/api/
+      dockerfile: ./Dockerfile.prod
     ports:
       - "5000:5000"
     volumes: ['./src/api:/api']
