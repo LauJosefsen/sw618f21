@@ -11,11 +11,13 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY tsconfig.json ./
 RUN npm install -g npm@7.10.0
-RUN npm install --silent
+RUN npm install
 RUN npm install react-scripts@4.0.3 -g
 RUN npm install -g serve@11.3.2
+
+ENV NODE_ENV=production
 
 RUN ["npm", "run", "build"]
 
 # start app
-CMD ["serve", "-s", "build"]
+CMD serve -s build -p 3000

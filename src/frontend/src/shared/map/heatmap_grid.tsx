@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { Popup, Rectangle } from 'react-leaflet';
 import { useQuery } from 'react-query';
-import { Button, Spinner } from 'reactstrap';
-import { hashStringToColor } from '../../helpers/hash_strings';
-import { EncCell } from '../../models/enc_cells';
+import { Button } from 'reactstrap';
 import * as L from 'leaflet';
 import { CustomSpinner } from '../custom_spinner';
+import {config} from "../../helpers/constants";
 
 interface Props {
 }
@@ -26,7 +25,7 @@ export const MapHeatMapGrid = (props: Props) => {
     }
 
     const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery(`repoHeatMapGrid`, () =>
-        fetch(`http://localhost:5000/cluster-heatmap`).then(res =>
+        fetch(`${config.api_url}/cluster-heatmap`).then(res =>
             res.json()
         ));
 
