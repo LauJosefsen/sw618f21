@@ -1,0 +1,20 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy code base
+    runs-on: ubuntu-latest
+    steps:
+      - name: DeployWithSsh
+        uses: appleboy/ssh-action@master
+        with:
+          host: techsource.dk
+          username: ais
+          key: ${{ secrets.ais_pkey }}
+          port: 22
+          script: |
+            cd /home/fresser/sw618f21/
+            git pull origin master
+            docker-compose -f docker-compose.prod.yml build
+            docker-compose up -d
