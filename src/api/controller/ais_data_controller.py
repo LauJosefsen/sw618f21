@@ -74,6 +74,13 @@ def cluster_heatmap(
     enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
     return jsonify(ais_data_service.simple_heatmap(enc_cell_id))
 
+@inject
+def trafic_density_heatmap(
+    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+):
+    enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
+    return jsonify(ais_data_service.trafic_density_heatmap(enc_cell_id))
+
 
 @inject
 def find_ais_time_median(

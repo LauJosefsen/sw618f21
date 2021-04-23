@@ -12,5 +12,4 @@ psutil
 pyproj
 shapely
 simplejson
-uWSGI
 pqdm

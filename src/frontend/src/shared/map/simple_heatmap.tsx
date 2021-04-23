@@ -15,14 +15,14 @@ interface Props {
 
 export const SimpleHeatMap = (props: Props) => {
     const { isLoading: loading, error, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
-        fetch(`${config.api_url}/cluster-heatmap?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
+        fetch(`${config.api_url}/tdh?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();
 
     const map = useMap();
     useEffect(() => {
-        setHeatMapLayer(L.heatLayer(data_heatmap ? data_heatmap.heatmap_data : [], { radius: 10 }));
+        setHeatMapLayer(L.heatLayer(data_heatmap ? data_heatmap.heatmap_data : [], { radius: 10, blur: 0, max: 1 }));
     }, [data_heatmap]);
 
     useEffect(() => {

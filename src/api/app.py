@@ -44,6 +44,13 @@ app.add_url_rule(
     "cluster_heatmap",
     controller.ais_data_controller.cluster_heatmap,
 )
+
+app.add_url_rule(
+    "/tdh",
+    "tdh",
+    controller.ais_data_controller.trafic_density_heatmap,
+)
+
 app.add_url_rule(
     "/find_ais_time_median",
     "find_ais_time_median",
