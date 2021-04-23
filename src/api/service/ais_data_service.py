@@ -293,6 +293,55 @@ class AisDataService:
 
         return data
 
+
+    def get_tracks_in_enc(self, enc_cell_id: int, simplify_tolerance=0):
+        connection = psycopg2.connect(dsn=self.dsn)
+        cursor = connection.cursor()
+
+        query = """
+        SELECT
+            t.id, t.ship_mmsi AS mmsi,
+            ST_AsGeoJson(ST_FlipCoordinates(
+                ST_Simplify(t.geom, %s)
+                )) AS coordinates
+        FROM public.track_with_geom AS t
+        JOIN enc_cells AS enc ON ST_Intersects(enc.location, t.geom)
+        WHERE enc.cell_id = %s
+        
+        """
+
+        cursor.execute(
+            query,
+            (
+                simplify_tolerance,
+                enc_cell_id
+            ),
+        )
+        data = [AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()]
+
+        query = """
+                            SELECT
+                            cell_name, cell_title, ST_AsGeoJson(ST_FlipCoordinates(location)) as location
+                            FROM enc_cells WHERE cell_id = %s
+                            """
+        cursor.execute(query, (enc_cell_id,))
+
+        enc_cells = [
+            AisDataService.__build_dict(cursor, row) for row in cursor.fetchall()
+        ]
+        if len(enc_cells) != 1:
+            return {}
+        enc_cell = enc_cells[0]
+        enc_cell["location"] = json.loads(enc_cell["location"])
+
+        cursor.close()
+        connection.close()
+
+        for row in data:
+            row["coordinates"] = json.loads(row["coordinates"])["coordinates"]
+
+        return {"tracks": data, "enc": enc_cell}
+
     def cluster_points(self):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()

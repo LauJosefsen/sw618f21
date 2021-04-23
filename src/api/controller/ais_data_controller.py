@@ -29,13 +29,11 @@ def cluster_points(
 
 @inject
 def get_tracks(ais_data_service: AisDataService = Provide[Container.ais_data_service]):
-    limit = request.args.get("limit", default=1, type=int)
-    offset = request.args.get("offset", default=0, type=int)
+    enc_cell_id = request.args.get("enc_cell_id", default=1, type=int)
     simplify = request.args.get("simplify", default=0, type=int)
-    mmsi = request.args.get("search", default=None, type=int)
     return jsonify(
-        ais_data_service.get_tracks(
-            limit, offset, simplify_tolerance=simplify, search_mmsi=mmsi
+        ais_data_service.get_tracks_in_enc(
+            enc_cell_id, simplify_tolerance=simplify
         )
     )
 

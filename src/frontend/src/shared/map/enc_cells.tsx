@@ -65,15 +65,21 @@ export const MapEncCells = (props: Props) => {
                                             <p>{enc.cell_name}</p>
                                             <label>Area</label>
                                             <p className="mt-0">{enc.area} km²</p>
-                                            <Button>Show tracks in cell</Button>
-                                            <Button
-                                                onClick={() => {
-                                                    console.log(enc.cell_id);
-                                                    setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
-                                                }}
-                                            >
-                                                Show heatmap in enc_cell
+                                            <label>Tracks</label>
+                                            <div>
+                                                <Button onClick={() => { setSettings({...settings, encIdForTrack: enc.cell_id, showEnc: false})}} color="primary">Show tracks in cell</Button>
+                                            </div>
+                                            <label>Heatmap</label>
+                                            <div>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
+                                                    }}
+                                                >
+                                                    Show heatmap in enc_cell
                                             </Button>
+                                            </div>
+
                                         </Popup>
                                     </Rectangle>
                                 ) : (
