@@ -5,9 +5,10 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import { CustomSidebar } from "./shared/sidebar";
 import { MapEncCells } from "./shared/map/enc_cells";
 import { settings, SettingsContext } from "./providers/settings_provider";
-import { useState } from "react";
+import React, { useState } from "react";
 import { SimpleHeatMap } from "./shared/map/simple_heatmap";
 import { MapTrack } from "./shared/map/track";
+import { TraficDensityHeatMap } from "./shared/map/trafic_density_heatmap";
 
 function App() {
     const [local_settings, setSettings] = useState<settings>({
@@ -35,7 +36,8 @@ function App() {
                                     {settings.showEnc ? <MapEncCells bounds={settings.encBounds} search={settings.encSearch} /> : ""}
                                     {settings.encIdForTrack ? <MapTrack enc_cell_id={settings.encIdForTrack} /> : ''}
 
-                                    {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""}
+                                    {settings.encIdForHeatMap ? <TraficDensityHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""}
+                                    {/* {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""} */}
                                 </>
                             )}
                         </SettingsContext.Consumer>

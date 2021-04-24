@@ -1,5 +1,0 @@
-dash
-pandas
-plotly
-requests
-geopandas

@@ -3,7 +3,9 @@ from flask import Blueprint
 
 from ais_app.containers import Container
 from ais_app.services.import_ais_service import ImportAisService
-from ais_app.services.space_data_preprocessing_service import SpaceDataPreprocessingService
+from ais_app.services.space_data_preprocessing_service import (
+    SpaceDataPreprocessingService,
+)
 
 blueprint = Blueprint("data_management", __name__)
 
@@ -18,8 +20,11 @@ def import_ais_data(
 
 
 @blueprint.route("/cluster")
+@inject
 def cluster_points(
-    space_data_service: SpaceDataPreprocessingService = Provide[Container.space_data_preprocessing_service],
+    space_data_preprocessing_service: SpaceDataPreprocessingService = Provide[
+        Container.space_data_preprocessing_service
+    ],
 ):
-    space_data_service.cluster_points()
+    space_data_preprocessing_service.cluster_points()
     return "Ok"

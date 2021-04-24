@@ -15,7 +15,7 @@ interface Props {
 
 export const MapTrack = (props: Props) => {
     const { isLoading, error, data } = useQuery(`repoTrackData-${props.enc_cell_id}`, () =>
-        fetch(`${config.api_url}/tracks?enc_cell_id=${props.enc_cell_id}`).then(res =>
+        fetch(`${config.api_url}/tracks/get_by_enc_id?enc_cell_id=${props.enc_cell_id}`).then(res =>
             res.json()
         ));
 

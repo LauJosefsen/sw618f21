@@ -26,6 +26,8 @@ class EncCellRepository:
 
         connection.close()
 
+        return enc_cell
+
     def get_enc_cells_search(self, search):
         if search == "":
             search = "%"
@@ -51,10 +53,12 @@ class EncCellRepository:
             query,
             (search, search),
         )
-        data = [build_dict(cursor, row) for row in cursor.fetchall()]
+        enc_cells = [build_dict(cursor, row) for row in cursor.fetchall()]
 
-        for obj in data:
+        for obj in enc_cells:
             obj["location"] = json.loads(obj["location"])
+
+        return enc_cells
 
     def import_enc_file(self, enc_fname):
         colnames = [

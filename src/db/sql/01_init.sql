@@ -1,0 +1,9 @@
+CREATE DATABASE ais;
+
+\c ais
+
+START TRANSACTION;
+
+CREATE EXTENSION postgis;
+
+COMMIT;

@@ -36,7 +36,7 @@ export const MapEncCells = (props: Props) => {
         return str_buf;
     };
     const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery(`repoEncData-${getBoundsString(props.bounds)}-${props.search}}`, () =>
-        fetch(`${config.api_url}/get_enc_cells?bounds=${getBoundsString(props.bounds)}&search=${props.search}`)
+        fetch(`${config.api_url}/enc/get_by_area_bounds?bounds=${getBoundsString(props.bounds)}&search=${props.search}`)
             .then((res) => res.json())
             .then((encs) => decode_polygon_to_limits(encs))
     );

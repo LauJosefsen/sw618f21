@@ -206,7 +206,7 @@ class SpaceDataPreprocessingService:
         # After method which looks at points
         tracks = self.space_data_preprocessing(points)
 
-        count = sum(len(track) for track in tracks)
+        count_after = sum(len(track) for track in tracks)
 
         update_threshold_query = """
         UPDATE data_error_rate SET
@@ -217,7 +217,7 @@ class SpaceDataPreprocessingService:
         WHERE rule_name = 'thresholdCompleteness';
         """
         cursor.execute(
-            update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count)
+            update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count_after)
         )
 
         # insert tracks and points:
@@ -248,14 +248,14 @@ class SpaceDataPreprocessingService:
                     query,
                     (
                         track_id,
-                        point.timestamp,
-                        point.location[0],
-                        point.location[1],
-                        point.rot,
-                        point.sog,
-                        point.cog,
-                        point.heading,
-                        point.position_fixing_device_type,
+                        point['timestamp'],
+                        point['longitude'],
+                        point['latitude'],
+                        point['rot'],
+                        point['sog'],
+                        point['cog'],
+                        point['heading'],
+                        point['position_fixing_device_type'],
                     ),
                 )
 
@@ -361,8 +361,8 @@ class SpaceDataPreprocessingService:
             return 99999999999
 
         distance = geopy.distance.distance(
-            (a["location"][1], a["location"][0]),
-            (b["location"][1], b["location"][0]),
+            (a["latitude"], a["longitude"]),
+            (b["latitude"], b["longitude"]),
         ).nautical
 
         if distance <= 0.26:
@@ -387,8 +387,8 @@ class SpaceDataPreprocessingService:
         :return: Speed in knots
         """
         distance = geopy.distance.distance(
-            (a["location"][1], a["location"][0]),
-            (b["location"][1], b["location"][0]),
+            (a["latitude"], a["longitude"]),
+            (b["latitude"], b["longitude"]),
         ).nautical
         time_distance = (b["timestamp"] - a["timestamp"]).total_seconds() / 3600.0
         if time_distance == 0:
