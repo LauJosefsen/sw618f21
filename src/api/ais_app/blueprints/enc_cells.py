@@ -2,7 +2,7 @@ from dependency_injector.wiring import inject, Provide
 from flask import Blueprint, request, jsonify
 
 from ais_app.containers import Container
-from ais_app.services.ais_data_service import AisDataService
+from ais_app.services.enc_cell_service import EncCellService
 
 blueprint = Blueprint("enc_cells", __name__)
 
@@ -10,16 +10,16 @@ blueprint = Blueprint("enc_cells", __name__)
 @blueprint.route("/import")
 @inject
 def import_enc_data(
-    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+    enc_cell_service: EncCellService = Provide[Container.enc_cell_service],
 ):
-    ais_data_service.import_enc_data()
-    return "done"
+    enc_cell_service.import_enc_cell_files()
+    return "Ok"
 
 
 @blueprint.route("/get_by_area_bounds")
 @inject
 def get_by_size_bounds(
-    ais_data_service: AisDataService = Provide[Container.ais_data_service],
+    enc_cell_service: EncCellService = Provide[Container.enc_cell_service],
 ):
     bounds = request.args.get("bounds", default="", type=str)
     bounds_parsed = [int(split) for split in bounds.split(",")]
@@ -32,5 +32,7 @@ def get_by_size_bounds(
     search = request.args.get("search", default="", type=str)
 
     return jsonify(
-        ais_data_service.get_enc_cells(area_limits=proper_bounds, search=search)
+        enc_cell_service.get_enc_cells_within_area_bounds_and_search(
+            area_limits=proper_bounds, search=search
+        )
     )

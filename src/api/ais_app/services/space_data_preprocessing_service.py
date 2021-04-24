@@ -3,7 +3,6 @@ from pqdm.processes import pqdm
 import geopy.distance
 
 from ais_app.helpers import build_dict
-from ais_app.model.ais_point import AisPoint
 from ais_app.repository.sql_connector import SqlConnector
 
 
@@ -29,10 +28,10 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
+        self.__before_rule_coordinates(cursor)
+
         connection.commit()
         connection.close()
-
-        self.__before_rule_coordinates()
 
         print("[CLUSTER] Cleared error_rates.")
         pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
@@ -50,10 +49,8 @@ class SpaceDataPreprocessingService:
         connection.commit()
         connection.close()
 
-    def __before_rule_coordinates(self):
-        connection = self.sql_connector.get_db_connection()
-        cursor = connection.cursor()
-
+    @staticmethod
+    def __before_rule_coordinates(cursor):
         cursor.execute("TRUNCATE data_error_rate")
 
         query_inserts = """
@@ -176,11 +173,7 @@ class SpaceDataPreprocessingService:
                 0
             )
         """
-
         cursor.execute(query_inserts)
-
-        connection.commit()
-        connection.close()
 
     def cluster_mmsi(self, mmsi):
         connection = self.sql_connector.get_db_connection()
@@ -207,10 +200,7 @@ class SpaceDataPreprocessingService:
                 """
 
         cursor.execute(query, tuple(mmsi))
-        points = [
-            AisPoint(**point_dict)
-            for point_dict in [build_dict(cursor, row) for row in cursor.fetchall()]
-        ]
+        points = [build_dict(cursor, row) for row in cursor.fetchall()]
 
         count_before = len(points)
         # After method which looks at points
@@ -271,10 +261,10 @@ class SpaceDataPreprocessingService:
 
     def space_data_preprocessing(
         self,
-        track_points: list[AisPoint],
+        track_points: list,
         threshold_completeness=20,
         threshold_space=25,
-    ) -> list[list[AisPoint]]:
+    ) -> list[list]:
         """
         Takes a list of points, and returns a list of groups of points.
         Input should be only one MMSI, and sorted by timestamp.
@@ -296,9 +286,7 @@ class SpaceDataPreprocessingService:
         ]
         return tracks
 
-    def partition(
-        self, track_points: list[AisPoint], threshold_space: int
-    ) -> list[list[AisPoint]]:
+    def partition(self, track_points: list, threshold_space: int) -> list[list]:
         """
         Takes a list of points and partitions it into a list of groups of points based on the space threshold.
         :param track_points: List of sorted points by timestamp
@@ -333,10 +321,10 @@ class SpaceDataPreprocessingService:
 
     def association(
         self,
-        track_points: list[list[AisPoint]],
+        track_points: list[list],
         threshold_space,
         threshold_completeness,
-    ) -> list[list[AisPoint]]:
+    ) -> list[list]:
         """
         Associates tracks that are similar
         :param track_points: List of groups of points
@@ -369,12 +357,12 @@ class SpaceDataPreprocessingService:
         :return: Difference in speed in knots
         """
 
-        if abs((b.timestamp - a.timestamp).total_seconds()) > 9000:
+        if abs((b["timestamp"] - a["timestamp"]).total_seconds()) > 9000:
             return 99999999999
 
         distance = geopy.distance.distance(
-            (a.location[1], a.location[0]),
-            (b.location[1], b.location[0]),
+            (a["location"][1], a["location"][0]),
+            (b["location"][1], b["location"][0]),
         ).nautical
 
         if distance <= 0.26:
@@ -382,13 +370,13 @@ class SpaceDataPreprocessingService:
 
         actual_speed = self.get_speed_between_points(a, b)
 
-        if a.sog is None:
-            if b.sog is None:
+        if a["sog"] is None:
+            if b["sog"] is None:
                 return 0
             else:
                 return 999999
 
-        return actual_speed - a.sog
+        return actual_speed - a["sog"]
 
     @staticmethod
     def get_speed_between_points(a, b):
@@ -399,10 +387,10 @@ class SpaceDataPreprocessingService:
         :return: Speed in knots
         """
         distance = geopy.distance.distance(
-            (a.location[1], a.location[0]),
-            (b.location[1], b.location[0]),
+            (a["location"][1], a["location"][0]),
+            (b["location"][1], b["location"][0]),
         ).nautical
-        time_distance = (b.timestamp - a.timestamp).total_seconds() / 3600.0
+        time_distance = (b["timestamp"] - a["timestamp"]).total_seconds() / 3600.0
         if time_distance == 0:
             time_distance = 1
         actual_speed = distance / time_distance
