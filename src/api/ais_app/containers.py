@@ -1,5 +1,8 @@
+"""Containers module."""
+
 from dependency_injector import containers, providers
-from service.ais_data_service import AisDataService
+
+from ais_app.services.ais_data_service import AisDataService
 
 
 class Container(containers.DeclarativeContainer):
