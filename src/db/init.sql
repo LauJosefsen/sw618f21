@@ -92,13 +92,13 @@ CREATE TABLE public.enc_cells
 );
 
 CREATE TABLE public.data_error_rate
-{
-    rule_name varchar(100) primary key,
-    mmsi_count_before int,
-    mmsi_count_after int,
+(
+    rule_name          varchar(100) primary key,
+    mmsi_count_before  int,
+    mmsi_count_after   int,
     point_count_before int,
-    point_count_after int
-}
+    point_count_after  int
+);
 
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Øer Havn', '01030000000100000005000000C01FAFEEF5592540D01F683FB1124C40C01FAFEEF5592540F02C738001144C406066666666662540F02C738001144C406066666666662540D01F683FB1124C40C01FAFEEF5592540D01F683FB1124C40', NULL);
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Københavns Havn (Sydlige del)', '0103000000010000000500000000910BEFEEEE28402882A3AAAACA4B4000910BEFEEEE28409899999999D94B4000295C8FC23529409899999999D94B4000295C8FC23529402882A3AAAACA4B4000910BEFEEEE28402882A3AAAACA4B40', NULL);

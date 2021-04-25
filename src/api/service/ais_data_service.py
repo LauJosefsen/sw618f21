@@ -651,21 +651,34 @@ class AisDataService:
 
         return {"enc": enc_cell, "heatmap_data": points_formatted}
 
-    def find_mmsi_without_x_transmission_response(self):
+    # method to research the influence from the split on x seconds.
+    def find_mmsi_without_x_transmission_response(self, seconds):
         connection = psycopg2.connect(dsn=self.dsn)
         cursor = connection.cursor()
-        query = """
-                SELECT mmsi, timestamp
-                    FROM public.data 
-                    GROUP BY mmsi, timestamp
-                    LIMIT 100000;
-        """
-
+        query = """SELECT DISTINCT mmsi FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999 AND
+                    (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
+                    longitude <= 180 AND longitude >=-180 AND
+                    latitude <= 90 AND latitude >= -90"""
         cursor.execute(query)
-        #ships = cursor.fetchall()[1]
-        ships = cursor.fetchall()
-        connection.commit
+        mmsi_list = cursor.fetchall()
+
+        mmsis_detected = []
+
+        for index, mmsi in enumerate(tqdm.tqdm(mmsi_list)):
+            query = """SELECT timestamp FROM public.data WHERE mmsi = %s ORDER BY timestamp"""
+            cursor.execute(query, mmsi)
+            points = cursor.fetchall()
+            for index, point in enumerate(points):
+                # check whether we are on last index, so we do not go out of bounds
+                if index != len(points) - 1:
+                    t1 = point[0]
+                    t2 = points[index + 1][0]
+
+                    difference = t2 - t1
+
+                    if difference.seconds > seconds:
+                        mmsis_detected.append(mmsi)  # append current point's mmsi
+
         connection.close()
 
-        return ships
-
+        return mmsis_detected
