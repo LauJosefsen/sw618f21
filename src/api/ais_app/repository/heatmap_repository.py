@@ -23,9 +23,9 @@ class HeatmapRepository:
                     """
         cursor.execute(query, (enc_cell_id,))
 
-        connection.close()
-
         points = [build_dict(cursor, row) for row in cursor.fetchall()]
+
+        connection.close()
 
         for point in points:
             point["grid_point"] = json.loads(point["grid_point"])

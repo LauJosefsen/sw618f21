@@ -8,7 +8,7 @@ class TrackRepository:
     __sql_connector = SqlConnector()
 
     def get_tracks_limit_offset_search_mmsi_simplify(
-        self, limit: int, offset: int, search_mmsi: str, simplify: float
+            self, limit: int, offset: int, search_mmsi: str, simplify: float
     ):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
@@ -48,16 +48,14 @@ class TrackRepository:
 
         return tracks
 
-    def get_tracks_in_enc_cell(self, enc_cell_id, simplify=0):
+    def get_tracks_in_enc_cell(self, enc_cell_id):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
         query = """
             SELECT
                 t.id, t.ship_mmsi AS mmsi,
-                ST_AsGeoJson(ST_FlipCoordinates(
-                    ST_Simplify(t.geom, %s)
-                    )) AS coordinates
+                ST_AsGeoJson(ST_FlipCoordinates(t.geom)) AS coordinates
             FROM public.track_with_geom AS t
             JOIN enc_cells AS enc ON ST_Intersects(enc.location, t.geom)
             WHERE enc.cell_id = %s
@@ -65,7 +63,7 @@ class TrackRepository:
 
         cursor.execute(
             query,
-            (simplify, enc_cell_id),
+            (enc_cell_id,),
         )
         data = [build_dict(cursor, row) for row in cursor.fetchall()]
 

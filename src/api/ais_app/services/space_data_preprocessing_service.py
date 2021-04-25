@@ -1,6 +1,7 @@
 import multiprocessing
 from pqdm.processes import pqdm
 import geopy.distance
+from tqdm import tqdm
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
@@ -34,8 +35,8 @@ class SpaceDataPreprocessingService:
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
-        # [self.cluster_mmsi(mmsi) for mmsi in mmsi_list]
+        # pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
+        [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
