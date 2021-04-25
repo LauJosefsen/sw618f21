@@ -1,7 +1,6 @@
 import multiprocessing
 from pqdm.processes import pqdm
 import geopy.distance
-from tqdm import tqdm
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
@@ -35,8 +34,8 @@ class SpaceDataPreprocessingService:
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        # pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
-        [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
+        pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
+        # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
@@ -46,6 +45,9 @@ class SpaceDataPreprocessingService:
                 (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
             """
         )
+
+        cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
+        cursor.execute("REFRESH MATERIALIZED VIEW heatmap_10m")
 
         connection.commit()
         connection.close()
@@ -211,14 +213,20 @@ class SpaceDataPreprocessingService:
 
         update_threshold_query = """
         UPDATE data_error_rate SET
-            mmsi_count_before = mmsi_count_before + 1,
+            mmsi_count_before = mmsi_count_before + %s,
             mmsi_count_after = mmsi_count_after + %s,
             point_count_before = point_count_before + %s,
             point_count_after = point_count_after + %s
         WHERE rule_name = 'thresholdCompleteness';
         """
         cursor.execute(
-            update_threshold_query, (0 if len(tracks) == 0 else 1, count_before, count_after)
+            update_threshold_query,
+            (
+                0 if len(count_before) == 0 else 1,
+                0 if len(tracks) == 0 else 1,
+                count_before,
+                count_after,
+            ),
         )
 
         # insert tracks and points:
@@ -249,14 +257,14 @@ class SpaceDataPreprocessingService:
                     query,
                     (
                         track_id,
-                        point['timestamp'],
-                        point['longitude'],
-                        point['latitude'],
-                        point['rot'],
-                        point['sog'],
-                        point['cog'],
-                        point['heading'],
-                        point['position_fixing_device_type'],
+                        point["timestamp"],
+                        point["longitude"],
+                        point["latitude"],
+                        point["rot"],
+                        point["sog"],
+                        point["cog"],
+                        point["heading"],
+                        point["position_fixing_device_type"],
                     ),
                 )
 

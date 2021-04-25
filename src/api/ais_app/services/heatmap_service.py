@@ -39,3 +39,6 @@ class HeatmapService:
         ]
 
         return {"enc": enc_cell, "heatmap_data": points_formatted}
+
+    def generate_trafic_density(self):
+        self.__heatmap_repository.generate_trafic_density_heatmap()

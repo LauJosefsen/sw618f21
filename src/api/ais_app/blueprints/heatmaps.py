@@ -23,3 +23,12 @@ def trafic_density_heatmap(
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
     return jsonify(heatmap_service.trafic_density_heatmap(enc_cell_id))
+
+
+@blueprint.route("/generate_trafic_density")
+@inject
+def generate_trafic_density_heatmap(
+    heatmap_service: HeatmapService = Provide[Container.heatmap_service],
+):
+    heatmap_service.generate_trafic_density()
+    return "Ok"

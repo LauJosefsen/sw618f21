@@ -8,7 +8,7 @@ class TrackRepository:
     __sql_connector = SqlConnector()
 
     def get_tracks_limit_offset_search_mmsi_simplify(
-            self, limit: int, offset: int, search_mmsi: str, simplify: float
+        self, limit: int, offset: int, search_mmsi: str, simplify: float
     ):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()

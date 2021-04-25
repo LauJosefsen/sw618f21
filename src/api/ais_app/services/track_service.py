@@ -12,9 +12,7 @@ class TrackService:
         )
 
     def get_tracks_in_enc(self, enc_cell_id: int):
-        tracks = self.__track_repository.get_tracks_in_enc_cell(
-            enc_cell_id
-        )
+        tracks = self.__track_repository.get_tracks_in_enc_cell(enc_cell_id)
 
         enc_cell = self.__enc_repository.get_enc_cells_by_id(enc_cell_id)
 

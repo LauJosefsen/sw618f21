@@ -37,7 +37,7 @@ class HeatmapRepository:
         cursor = connection.cursor()
         query = """
                 WITH heatmap_data AS (
-                    SELECT geom, intensity FROM heatmap_trafic_density_1000m as heatmap
+                    SELECT geom, intensity FROM heatmap_trafic_density_10m as heatmap
                     JOIN enc_cells as enc on st_contains(enc.location, heatmap.geom)
                     WHERE enc.cell_id = %s AND heatmap.intensity > 0
                 )
@@ -56,3 +56,11 @@ class HeatmapRepository:
             point["grid_point"] = json.loads(point["grid_point"])
 
         return points
+
+    def generate_trafic_density_heatmap(self):
+        connection = self.__sql_connector.get_db_connection()
+
+        connection.cursor().execute("SELECT * FROM generate_trafic_density_heatmap();")
+
+        connection.close()
+        pass
