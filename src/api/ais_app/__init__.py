@@ -1,6 +1,5 @@
 from flask import Flask
 
-from ais_app.services.ais_data_service import AisDataService
 from .blueprints import data_management, enc_cells, heatmaps, tracks
 from .containers import Container
 
