@@ -23,8 +23,9 @@ class SqlConnector:
             port = ""
 
         # used for psycopg2
-        self.dsn = \
+        self.dsn = (
             f"dbname={database} user={user} password={password} host={host} port={port}"
+        )
         # used for d6tstack utilities when importing csv files.
         self.cfg_uri_psql = (
             f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
