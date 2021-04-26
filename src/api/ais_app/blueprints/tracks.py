@@ -13,5 +13,4 @@ def get_by_enc_id(
     track_service: TrackService = Provide[Container.track_service],
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=1, type=int)
-    simplify = request.args.get("simplify", default=0, type=int)
     return jsonify(track_service.get_tracks_in_enc(enc_cell_id))

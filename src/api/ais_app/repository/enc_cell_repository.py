@@ -1,5 +1,4 @@
 import json
-import os
 import pandas as pd
 
 from ais_app.helpers import build_dict
