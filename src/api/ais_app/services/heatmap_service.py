@@ -11,14 +11,7 @@ class HeatmapService:
 
         enc_cell = self.__enc_cell_repository.get_enc_cells_by_id(enc_cell_id)
 
-        points_formatted = [
-            [
-                point["grid_point"]["coordinates"][0],
-                point["grid_point"]["coordinates"][1],
-                point["intensity"],
-            ]
-            for point in points
-        ]
+        points_formatted = self.__format_to_leaflet_heatlayer(points)
 
         return {"enc": enc_cell, "heatmap_data": points_formatted}
 
@@ -29,6 +22,12 @@ class HeatmapService:
 
         enc_cell = self.__enc_cell_repository.get_enc_cells_by_id(enc_cell_id)
 
+        points_formatted = self.__format_to_leaflet_heatlayer(points)
+
+        return {"enc": enc_cell, "heatmap_data": points_formatted}
+
+    @staticmethod
+    def __format_to_leaflet_heatlayer(points):
         points_formatted = [
             [
                 point["grid_point"]["coordinates"][0],
@@ -37,8 +36,7 @@ class HeatmapService:
             ]
             for point in points
         ]
-
-        return {"enc": enc_cell, "heatmap_data": points_formatted}
+        return points_formatted
 
     def generate_trafic_density(self):
         self.__heatmap_repository.generate_trafic_density_heatmap()
