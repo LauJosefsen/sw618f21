@@ -60,3 +60,4 @@ jobs:
           VALIDATE_TYPESCRIPT_STANDARD: false
           VALIDATE_DOCKERFILE: false
           VALIDATE_DOCKERFILE_HADOLINT: false
+          VALIDATE_JSCPD: false
