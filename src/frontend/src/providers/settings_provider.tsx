@@ -7,10 +7,7 @@ export interface settings {
     encSearch: string;
 
     // TRACKS:
-    showTrack: boolean;
-    trackOffset: number;
-    trackLimit: number;
-    trackSearch: string;
+    encIdForTrack: number | undefined;
 
     // HEATMAP
     encIdForHeatMap: number | undefined;
@@ -28,10 +25,7 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         encSearch: "",
         showEnc: true,
         encBounds: { small: [true, 0, 1000000], medium: [true, 1000000, 10000000], large: [true, 10000000, 10000000000000] },
-        showTrack: true,
-        trackOffset: 0,
-        trackLimit: 0,
-        trackSearch: "",
+        encIdForTrack: undefined,
         encIdForHeatMap: undefined,
     },
 });

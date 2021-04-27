@@ -65,7 +65,7 @@ export const CustomSidebar = () => {
                                 </>
                             )}
 
-                            <h3>Tracks</h3>
+                            {/* <h3>Tracks</h3>
                             <Label>Limit</Label>
                             <Input
                                 type="number"
@@ -89,7 +89,7 @@ export const CustomSidebar = () => {
                                 onChange={(e) => {
                                     setSettings({ ...settings, trackSearch: e.currentTarget.value });
                                 }}
-                            />
+                            /> */}
 
                             <Button className="sidebar-button" onClick={() => setSidebarOpen(false)}>
                                 Close sidebar

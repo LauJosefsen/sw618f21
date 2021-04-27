@@ -5,18 +5,17 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import { CustomSidebar } from "./shared/sidebar";
 import { MapEncCells } from "./shared/map/enc_cells";
 import { settings, SettingsContext } from "./providers/settings_provider";
-import { useState } from "react";
+import React, { useState } from "react";
 import { SimpleHeatMap } from "./shared/map/simple_heatmap";
+import { MapTrack } from "./shared/map/track";
+import { TraficDensityHeatMap } from "./shared/map/trafic_density_heatmap";
 
 function App() {
     const [local_settings, setSettings] = useState<settings>({
         encSearch: "",
         showEnc: true,
         encBounds: { ExtraSmall: [true, 0, 100], Small: [true, 100, 3000], Medium: [true, 3000, 50000], Large: [true, 50000, 10000000] },
-        showTrack: true,
-        trackOffset: 0,
-        trackLimit: 5,
-        trackSearch: "",
+        encIdForTrack: undefined,
         encIdForHeatMap: undefined,
     });
 
@@ -35,9 +34,10 @@ function App() {
                             {({ settings }) => (
                                 <>
                                     {settings.showEnc ? <MapEncCells bounds={settings.encBounds} search={settings.encSearch} /> : ""}
-                                    {/* {settings.showTrack ? <MapTrack limit={settings.trackLimit} offset={settings.trackOffset} search={settings.trackSearch} /> : ''} */}
+                                    {settings.encIdForTrack ? <MapTrack enc_cell_id={settings.encIdForTrack} /> : ''}
 
-                                    {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""}
+                                    {settings.encIdForHeatMap ? <TraficDensityHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""}
+                                    {/* {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} /> : ""} */}
                                 </>
                             )}
                         </SettingsContext.Consumer>

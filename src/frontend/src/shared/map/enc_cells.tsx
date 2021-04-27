@@ -36,7 +36,7 @@ export const MapEncCells = (props: Props) => {
         return str_buf;
     };
     const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery(`repoEncData-${getBoundsString(props.bounds)}-${props.search}}`, () =>
-        fetch(`${config.api_url}/get_enc_cells?bounds=${getBoundsString(props.bounds)}&search=${props.search}`)
+        fetch(`${config.api_url}/enc/get_by_area_bounds?bounds=${getBoundsString(props.bounds)}&search=${props.search}`)
             .then((res) => res.json())
             .then((encs) => decode_polygon_to_limits(encs))
     );
@@ -65,15 +65,21 @@ export const MapEncCells = (props: Props) => {
                                             <p>{enc.cell_name}</p>
                                             <label>Area</label>
                                             <p className="mt-0">{enc.area} km²</p>
-                                            <Button>Show tracks in cell</Button>
-                                            <Button
-                                                onClick={() => {
-                                                    console.log(enc.cell_id);
-                                                    setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
-                                                }}
-                                            >
-                                                Show heatmap in enc_cell
+                                            <label>Tracks</label>
+                                            <div>
+                                                <Button onClick={() => { setSettings({...settings, encIdForTrack: enc.cell_id, showEnc: false})}} color="primary">Show tracks in cell</Button>
+                                            </div>
+                                            <label>Heatmap</label>
+                                            <div>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
+                                                    }}
+                                                >
+                                                    Show heatmap in enc_cell
                                             </Button>
+                                            </div>
+
                                         </Popup>
                                     </Rectangle>
                                 ) : (

@@ -1,88 +1,3 @@
-CREATE DATABASE ais;
-
-\c ais
-
-START TRANSACTION;
-
-CREATE EXTENSION postgis;
-
-CREATE TABLE public.data
-(
-    timestamp                   timestamp not null,
-    mobile_type                 varchar(50),
-    MMSI                        int,
-    latitude                    double precision,
-    longitude                   double precision,
-    nav_stat                    varchar(50),
-    rot                         double precision,
-    sog                         double precision,
-    cog                         double precision,
-    heading                     double precision,
-    imo                         varchar(10),
-    callsign                    varchar(10),
-    name                        text,
-    ship_type                   varchar(50),
-    cargo_type                  varchar(50),
-    width                       double precision,
-    length                      double precision,
-    position_fixing_device_type varchar(50),
-    draught                     double precision,
-    destination                 varchar(100),
-    eta                         timestamp,
-    data_src_type               varchar(20),
-    a                           double precision,
-    b                           double precision,
-    c                           double precision,
-    d                           double precision
-);
-
-CREATE INDEX mmsi_index ON public.data (MMSI);
-
-CREATE TABLE public.ship
-(
-    MMSI        int PRIMARY KEY,
-    IMO         varchar(10),
-    mobile_type varchar(50),
-    callsign    varchar(10),
-    name        text,
-    ship_type   varchar(50),
-    width       double precision,
-    length      double precision,
-    draught     double precision,
-    a           double precision,
-    b           double precision,
-    c           double precision,
-    d           double precision
-);
-
-CREATE TABLE public.track
-(
-    id          bigserial primary key,
-    ship_mmsi   int,
-    destination varchar(100),
-    cargo_type  varchar(50),
-    eta         timestamp,
-    CONSTRAINT fk_track_ship
-        FOREIGN KEY (ship_mmsi) REFERENCES public.ship (mmsi)
-);
-
-CREATE TABLE public.points
-(
-    id                          bigserial primary key,
-    track_id                    bigint,
-    timestamp                   timestamp,
-    location                    geometry(point) not null,
-    rot                         double precision,
-    sog                         double precision,
-    cog                         double precision,
-    heading                     int,
-    position_fixing_device_type varchar(50),
-    CONSTRAINT fk_ais_track
-        FOREIGN KEY (track_id) REFERENCES public.track (id)
-);
-
-CREATE INDEX track_timestamp_index ON public.points (timestamp);
-
 CREATE TABLE public.enc_cells
 (
     cell_id    serial primary key,
@@ -91,14 +6,6 @@ CREATE TABLE public.enc_cells
     location   geometry not null
 );
 
-CREATE TABLE public.data_error_rate
-{
-    rule_name varchar(100) primary key,
-    mmsi_count_before int,
-    mmsi_count_after int,
-    point_count_before int,
-    point_count_after int
-}
 
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Øer Havn', '01030000000100000005000000C01FAFEEF5592540D01F683FB1124C40C01FAFEEF5592540F02C738001144C406066666666662540F02C738001144C406066666666662540D01F683FB1124C40C01FAFEEF5592540D01F683FB1124C40', NULL);
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Københavns Havn (Sydlige del)', '0103000000010000000500000000910BEFEEEE28402882A3AAAACA4B4000910BEFEEEE28409899999999D94B4000295C8FC23529409899999999D94B4000295C8FC23529402882A3AAAACA4B4000910BEFEEEE28402882A3AAAACA4B40', NULL);
@@ -253,26 +160,3 @@ INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Småland
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Aabenraa Havn', '01030000000100000005000000802F4CA60AD62240B867F20762824B40802F4CA60AD62240B0D85F764F864B406066666666E62240B0D85F764F864B406066666666E62240B867F20762824B40802F4CA60AD62240B867F20762824B40', NULL);
 
 UPDATE public.enc_cells SET location = st_setsrid(location, 4326);
-
-CREATE INDEX point_geom_index
-  ON points
-  USING GIST (location);
-
-CREATE INDEX point_track ON points (track_id ASC NULLS FIRST);
-
-CREATE MATERIALIZED VIEW public.heatmap_10m AS
-    SELECT grid_point, count(*) FROM
-        (
-            SELECT
-            ST_Transform(ST_SnapToGrid(ST_Transform(location, 3857), 10),4326) as grid_point
-            FROM points
-            WHERE sog > 1
-        )
-    AS grid
-    GROUP BY grid_point;
-
-CREATE INDEX heatmap_10m_geom_index
-  ON heatmap_10m
-  USING GIST (grid_point);
-
-COMMIT;

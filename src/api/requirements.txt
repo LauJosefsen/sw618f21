@@ -11,6 +11,5 @@ joblib
 psutil
 pyproj
 shapely
-tqdm
 simplejson
-uWSGI
+pqdm

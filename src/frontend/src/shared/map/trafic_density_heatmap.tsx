@@ -13,9 +13,9 @@ interface Props {
     enc_cell_id: number;
 }
 
-export const SimpleHeatMap = (props: Props) => {
+export const TraficDensityHeatMap = (props: Props) => {
     const { isLoading: loading, error, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
-        fetch(`${config.api_url}/heatmaps/simple?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
+        fetch(`${config.api_url}/heatmaps/trafic_density?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();
