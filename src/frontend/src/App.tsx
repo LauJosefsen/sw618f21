@@ -19,7 +19,8 @@ function App() {
         showEnc: true,
         encBounds: { ExtraSmall: [true, 0, 100], Small: [true, 100, 3000], Medium: [true, 3000, 50000], Large: [true, 50000, 10000000] },
         encIdForTrack: undefined,
-        encIdForHeatMap: undefined,
+        encIdForSimpleHeatMap: undefined,
+        encIdForTraficDensityHeatMap: undefined,
     });
 
     return (
@@ -39,8 +40,16 @@ function App() {
                                     {settings.showEnc ? <MapEncCells bounds={settings.encBounds} search={settings.encSearch} /> : ""}
                                     {settings.encIdForTrack ? <MapTrack enc_cell_id={settings.encIdForTrack} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} /> : ""}
 
-                                    {/* {settings.encIdForHeatMap ? <TraficDensityHeatMap enc_cell_id={settings.encIdForHeatMap} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} /> : ""} */}
-                                    {settings.encIdForHeatMap ? <SimpleHeatMap enc_cell_id={settings.encIdForHeatMap} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} /> : ""}
+                                    {settings.encIdForTraficDensityHeatMap ? (
+                                        <TraficDensityHeatMap enc_cell_id={settings.encIdForTraficDensityHeatMap} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} />
+                                    ) : (
+                                        ""
+                                    )}
+                                    {settings.encIdForSimpleHeatMap ? (
+                                        <SimpleHeatMap enc_cell_id={settings.encIdForSimpleHeatMap} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} />
+                                    ) : (
+                                        ""
+                                    )}
                                 </>
                             )}
                         </SettingsContext.Consumer>

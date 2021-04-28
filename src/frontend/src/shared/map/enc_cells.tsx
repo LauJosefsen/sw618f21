@@ -92,10 +92,22 @@ export const MapEncCells = (props: Props) => {
                                                         color="primary"
                                                         disabled={settings.shipTypesSelected.length == 0}
                                                         onClick={() => {
-                                                            setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
+                                                            setSettings({ ...settings, encIdForSimpleHeatMap: enc.cell_id, showEnc: false });
                                                         }}
                                                     >
-                                                        Show heatmap
+                                                        Simple heatmap
+                                                    </Button>
+                                                </Col>
+                                                <Col md={6}>
+                                                    <Button
+                                                        className="mb-2 w-100"
+                                                        color="primary"
+                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        onClick={() => {
+                                                            setSettings({ ...settings, encIdForTraficDensityHeatMap: enc.cell_id, showEnc: false });
+                                                        }}
+                                                    >
+                                                        Trafic density heatmap
                                                     </Button>
                                                 </Col>
                                             </Row>

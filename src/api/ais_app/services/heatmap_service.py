@@ -18,9 +18,10 @@ class HeatmapService:
 
         return {"enc": enc_cell, "heatmap_data": points_formatted}
 
-    def trafic_density_heatmap(self, enc_cell_id: int):
+    def trafic_density_heatmap(self, enc_cell_id: int, ship_types: list[str]):
         points = self.__heatmap_repository.get_trafic_density_heatmap_for_enc(
-            enc_cell_id
+            enc_cell_id,
+            ship_types
         )
 
         enc_cell = self.__enc_cell_repository.get_enc_cells_by_id(enc_cell_id)

@@ -51,7 +51,7 @@ export const SimpleHeatMap = (props: Props) => {
                             <Button
                                 onClick={() => {
                                     map.removeLayer(heatMapLayer);
-                                    setSettings({ ...settings, encIdForHeatMap: undefined, showEnc: true });
+                                    setSettings({ ...settings, encIdForSimpleHeatMap: undefined, showEnc: true });
                                 }}
                             >
                                 Exit heatmap-layer

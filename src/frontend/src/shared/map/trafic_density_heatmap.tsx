@@ -16,7 +16,7 @@ interface Props {
 
 export const TraficDensityHeatMap = (props: Props) => {
     const { isLoading: loading, error, data: data_heatmap } = useQuery(["trafic_density_heatmap", props.enc_cell_id, props.ship_types], () =>
-        fetch(`${config.api_url}/heatmaps/trafic_dwdwensity?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
+        fetch(`${config.api_url}/heatmaps/trafic_density?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();
@@ -51,7 +51,7 @@ export const TraficDensityHeatMap = (props: Props) => {
                             <Button
                                 onClick={() => {
                                     map.removeLayer(heatMapLayer);
-                                    setSettings({ ...settings, encIdForHeatMap: undefined, showEnc: true });
+                                    setSettings({ ...settings, encIdForTraficDensityHeatMap: undefined, showEnc: true });
                                 }}
                             >
                                 Exit heatmap-layer
