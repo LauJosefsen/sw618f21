@@ -5,7 +5,6 @@ import numpy as np
 from pqdm.processes import pqdm
 import geopy.distance
 import pandas as pd
-from tqdm import tqdm
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector

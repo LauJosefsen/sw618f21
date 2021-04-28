@@ -57,7 +57,7 @@ class TrackRepository:
                 ST_AsGeoJson(ST_FlipCoordinates(t.geom)) AS coordinates
             FROM public.track_with_geom AS t
             JOIN enc_cells AS enc ON ST_Intersects(enc.location, t.geom)
-            WHERE 
+            WHERE
                 enc.cell_id = %s AND
                 t.ship_type = ANY (string_to_array(%s, ','))
         """

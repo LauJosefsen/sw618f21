@@ -15,12 +15,12 @@ class HeatmapRepository:
         cursor = connection.cursor()
         query = """
                         WITH heatmap_data AS (
-                            SELECT 
-                                grid_point, 
-                                SUM(count) AS intensity 
+                            SELECT
+                                grid_point,
+                                SUM(count) AS intensity
                             FROM simple_heatmap as heatmap
                             JOIN enc_cells as enc on st_contains(enc.location, heatmap.grid_point)
-                            WHERE 
+                            WHERE
                                 enc.cell_id = %s AND
                                 heatmap.ship_type = ANY (string_to_array(%s, ','))
                             GROUP BY heatmap.grid_point
@@ -51,7 +51,7 @@ class HeatmapRepository:
                     FROM heatmap_trafic_density as heatmap
                     JOIN grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
                     JOIN enc_cells as enc on st_contains(enc.location, grid.geom)
-                    WHERE 
+                    WHERE
                         enc.cell_id = %s AND
                         heatmap.intensity > 0 AND
                         heatmap.ship_type = ANY (string_to_array(%s, ','))
