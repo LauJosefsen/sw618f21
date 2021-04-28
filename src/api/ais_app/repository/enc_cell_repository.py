@@ -40,7 +40,7 @@ class EncCellRepository:
                         SELECT * FROM (
                             SELECT
                             *,
-                            ST_AsGeoJson(public.enc_cells.location) AS location,
+                            ST_AsGeoJson(ST_FlipCoordinates(public.enc_cells.location)) AS location,
                             ROUND(CAST(ST_Area(ST_Transform(location, 3857))/1000000 AS NUMERIC), 2) AS area
                             FROM enc_cells
                             WHERE cell_title LIKE %s OR cell_name LIKE %s

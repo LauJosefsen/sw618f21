@@ -7,15 +7,16 @@ import { useQuery } from "react-query";
 import { Button } from "reactstrap";
 import { SettingsContext } from "../../providers/settings_provider";
 import { CustomSpinner } from "../custom_spinner";
-import {config} from "../../helpers/constants";
+import { config } from "../../helpers/constants";
 
 interface Props {
     enc_cell_id: number;
+    ship_types: string[];
 }
 
 export const TraficDensityHeatMap = (props: Props) => {
-    const { isLoading: loading, error, data: data_heatmap } = useQuery(`repoHeatMapGrid_${props.enc_cell_id}`, () =>
-        fetch(`${config.api_url}/heatmaps/trafic_density?enc_cell_id=${props.enc_cell_id}`).then((res) => res.json())
+    const { isLoading: loading, error, data: data_heatmap } = useQuery(["trafic_density_heatmap", props.enc_cell_id, props.ship_types], () =>
+        fetch(`${config.api_url}/heatmaps/trafic_dwdwensity?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();

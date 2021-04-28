@@ -13,7 +13,9 @@ def simple_heatmap(
     heatmap_service: HeatmapService = Provide[Container.heatmap_service],
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
-    return jsonify(heatmap_service.simple_heatmap(enc_cell_id))
+    ship_types = request.args.get("ship_types", default="", type=str).split(",")
+
+    return jsonify(heatmap_service.simple_heatmap(enc_cell_id, ship_types = ship_types))
 
 
 @blueprint.route("/trafic_density")

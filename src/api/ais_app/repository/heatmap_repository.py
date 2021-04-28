@@ -7,7 +7,10 @@ from ais_app.repository.sql_connector import SqlConnector
 class HeatmapRepository:
     __sql_connector = SqlConnector()
 
-    def get_simple_heatmap_for_enc(self, enc_cell_id):
+    def get_simple_heatmap_for_enc(self, enc_cell_id, ship_types: list[str] = None):
+        if ship_types is None:
+            ship_types = []
+
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
         query = """
