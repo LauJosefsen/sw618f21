@@ -11,8 +11,8 @@ class TrackService:
             limit, offset, simplify_tolerance, search_mmsi
         )
 
-    def get_tracks_in_enc(self, enc_cell_id: int):
-        tracks = self.__track_repository.get_tracks_in_enc_cell(enc_cell_id)
+    def get_tracks_in_enc(self, enc_cell_id: int, ship_types: list[str]):
+        tracks = self.__track_repository.get_tracks_in_enc_cell(enc_cell_id, ship_types)
 
         enc_cell = self.__enc_repository.get_enc_cells_by_id(enc_cell_id)
 

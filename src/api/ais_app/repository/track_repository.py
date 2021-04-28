@@ -46,7 +46,7 @@ class TrackRepository:
 
         return tracks
 
-    def get_tracks_in_enc_cell(self, enc_cell_id):
+    def get_tracks_in_enc_cell(self, enc_cell_id, ship_types: list[str]):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
@@ -57,12 +57,14 @@ class TrackRepository:
                 ST_AsGeoJson(ST_FlipCoordinates(t.geom)) AS coordinates
             FROM public.track_with_geom AS t
             JOIN enc_cells AS enc ON ST_Intersects(enc.location, t.geom)
-            WHERE enc.cell_id = %s
+            WHERE 
+                enc.cell_id = %s AND
+                t.ship_type = ANY (string_to_array(%s, ','))
         """
 
         cursor.execute(
             query,
-            (enc_cell_id,),
+            (enc_cell_id,",".join(ship_types)),
         )
         data = [build_dict(cursor, row) for row in cursor.fetchall()]
 
