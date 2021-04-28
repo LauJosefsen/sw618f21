@@ -245,32 +245,37 @@ class SpaceDataPreprocessingService:
                     d = None
                 return d
 
-            df['eta'] = df['eta'].astype(str).apply(apply_datetime_if_not_none)
+            df["eta"] = df["eta"].astype(str).apply(apply_datetime_if_not_none)
 
-            most_common_row = df.groupby(
-                [
-                    "destination",
-                    "cargo_type",
-                    "eta",
-                    "mmsi",
-                    "imo",
-                    "mobile_type",
-                    "callsign",
-                    "name",
-                    "ship_type",
-                    "width",
-                    "length",
-                    "draught",
-                    "a",
-                    "b",
-                    "c",
-                    "d"
-                ],
-                dropna=False
-            ).size().idxmax(skipna=False)
+            most_common_row = (
+                df.groupby(
+                    [
+                        "destination",
+                        "cargo_type",
+                        "eta",
+                        "mmsi",
+                        "imo",
+                        "mobile_type",
+                        "callsign",
+                        "name",
+                        "ship_type",
+                        "width",
+                        "length",
+                        "draught",
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                    ],
+                    dropna=False,
+                )
+                .size()
+                .idxmax(skipna=False)
+            )
 
             most_common_row_with_none_instead_of_nan = [
-                None if type(x).__module__ == np.__name__ and np.isnan(x) else x for x in most_common_row
+                None if type(x).__module__ == np.__name__ and np.isnan(x) else x
+                for x in most_common_row
             ]
 
             query = """

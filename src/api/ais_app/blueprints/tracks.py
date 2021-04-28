@@ -10,7 +10,7 @@ blueprint = Blueprint("tracks", __name__)
 @blueprint.route("/get_by_enc_id")
 @inject
 def get_by_enc_id(
-        track_service: TrackService = Provide[Container.track_service],
+    track_service: TrackService = Provide[Container.track_service],
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=1, type=int)
     ship_types = request.args.get("ship_types", default="", type=str).split(",")

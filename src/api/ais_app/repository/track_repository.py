@@ -64,7 +64,7 @@ class TrackRepository:
 
         cursor.execute(
             query,
-            (enc_cell_id,",".join(ship_types)),
+            (enc_cell_id, ",".join(ship_types)),
         )
         data = [build_dict(cursor, row) for row in cursor.fetchall()]
 

@@ -31,7 +31,7 @@ class HeatmapRepository:
                                 as intensity
                         FROM heatmap_data
                     """
-        cursor.execute(query, (enc_cell_id,",".join(ship_types)))
+        cursor.execute(query, (enc_cell_id, ",".join(ship_types)))
 
         points = [build_dict(cursor, row) for row in cursor.fetchall()]
 
