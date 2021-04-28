@@ -1,6 +1,8 @@
 import multiprocessing
 from pqdm.processes import pqdm
 import geopy.distance
+import pandas as pd
+from tqdm import tqdm
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
@@ -14,9 +16,7 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         # Lets remove all the previous clustering.
-        # noinspection SqlWithoutWhere
-        cursor.execute("UPDATE heatmap_trafic_density_1000m SET intensity = 0")
-        cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
+        cursor.execute("TRUNCATE track RESTART IDENTITY CASCADE")
 
         print("[CLUSTER] Cleared previous cluster.")
 
@@ -28,29 +28,29 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        self.__before_rule_coordinates(cursor)
+        # self.__before_rule_coordinates(cursor)
 
         connection.commit()
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
-        # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
+        # pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
+        [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
-        connection = self.sql_connector.get_db_connection()
-        cursor = connection.cursor()
-        cursor.execute(
-            """
-                DELETE FROM ship WHERE mmsi IN
-                (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
-            """
-        )
-
-        cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
-        cursor.execute("REFRESH MATERIALIZED VIEW heatmap_10m")
-
-        connection.commit()
-        connection.close()
+        # connection = self.sql_connector.get_db_connection()
+        # cursor = connection.cursor()
+        # cursor.execute(
+        #     """
+        #         DELETE FROM ship WHERE mmsi IN
+        #         (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
+        #     """
+        # )
+        #
+        # cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
+        # cursor.execute("REFRESH MATERIALIZED VIEW heatmap_10m")
+        #
+        # connection.commit()
+        # connection.close()
 
     @staticmethod
     def __before_rule_coordinates(cursor):
@@ -182,20 +182,8 @@ class SpaceDataPreprocessingService:
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
 
-        # make a new ship, and cluster as normal
         query = """
-                    INSERT INTO public.ship
-                    (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
-                    SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
-                    FROM public.data WHERE mmsi= %s LIMIT 1 RETURNING mmsi
-                    """
-
-        cursor.execute(query, tuple(mmsi))
-        ship_id = cursor.fetchall()[0]
-
-        query = """
-                    SELECT mmsi, timestamp, longitude, latitude, rot,
-                    sog, cog, heading, position_fixing_device_type FROM public.data
+                    SELECT * FROM public.data
                     WHERE mmsi = %s AND
                     (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
                     longitude <= 180 AND longitude >=-180 AND
@@ -222,7 +210,7 @@ class SpaceDataPreprocessingService:
         cursor.execute(
             update_threshold_query,
             (
-                0 if len(count_before) == 0 else 1,
+                0 if count_before == 0 else 1,
                 0 if len(tracks) == 0 else 1,
                 count_before,
                 count_after,
@@ -230,25 +218,73 @@ class SpaceDataPreprocessingService:
         )
 
         # insert tracks and points:
-        self.__insert_tracks(ship_id, tracks, cursor)
+        self.__insert_tracks(tracks, cursor)
 
         connection.commit()
         connection.close()
 
     @staticmethod
-    def __insert_tracks(ship_id, tracks, cursor):
+    def __insert_tracks(tracks, cursor):
         tracks = [track for track in tracks if len(track) > 0]
 
-        for index, course in enumerate(tracks):
+        for index, track in enumerate(tracks):
             # insert course
+
+            # todo insert all columns and calculate the columns beforehand
+            df = pd.DataFrame.from_dict(track)
+            most_common_row = df.groupby(
+                [
+                    "destination",
+                    # "cargo_type",
+                    # "eta",
+                    "mmsi",
+                    "imo",
+                    "mobile_type",
+                    "callsign",
+                    "name",
+                    "ship_type",
+                    "width",
+                    "length",
+                    "draught",
+                    "a",
+                    "b",
+                    "c",
+                    "d"
+                ]
+            )
+            most_common_row_2 = df.groupby(
+                [
+                    "destination",
+                    "cargo_type",
+                    "eta",
+                    "mmsi",
+                    "imo",
+                    "mobile_type",
+                    "callsign",
+                    "name",
+                    "ship_type",
+                    "width",
+                    "length",
+                    "draught",
+                    "a",
+                    "b",
+                    "c",
+                    "d"
+                ]
+            )
+            test = most_common_row.size()
+            test2 = most_common_row_2.size()
+
+            test = test2.idxmax(skipna=True)
+
             query = """
-                            INSERT INTO public.track (ship_mmsi) VALUES (%s) RETURNING id;
-                        """
-            cursor.execute(query, tuple(ship_id))
+                INSERT INTO public.track (mmsi) VALUES (%s) RETURNING id;
+                """
+            cursor.execute(query, (1234,))
             track_id = cursor.fetchall()[0]
 
             # insert points
-            for point in course:
+            for point in track:
                 query = """
                                 INSERT INTO public.points
                                 (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type)

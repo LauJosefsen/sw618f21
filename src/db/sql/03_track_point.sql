@@ -1,6 +1,10 @@
-CREATE TABLE public.ship
+CREATE TABLE public.track
 (
-    MMSI        int PRIMARY KEY,
+    id          bigserial primary key,
+    destination varchar(100),
+    cargo_type  varchar(50),
+    eta         timestamp,
+    MMSI        int,
     IMO         varchar(10),
     mobile_type varchar(50),
     callsign    varchar(10),
@@ -13,17 +17,6 @@ CREATE TABLE public.ship
     b           double precision,
     c           double precision,
     d           double precision
-);
-
-CREATE TABLE public.track
-(
-    id          bigserial primary key,
-    ship_mmsi   int,
-    destination varchar(100),
-    cargo_type  varchar(50),
-    eta         timestamp,
-    CONSTRAINT fk_track_ship
-        FOREIGN KEY (ship_mmsi) REFERENCES public.ship (mmsi)
 );
 
 CREATE TABLE public.points
@@ -52,12 +45,10 @@ CREATE INDEX point_track ON points (track_id ASC NULLS FIRST);
 -- View: public.track_with_geom
 CREATE MATERIALIZED VIEW public.track_with_geom
 AS
- SELECT t.id,
-    t.ship_mmsi,
-    t.destination,
-    t.cargo_type,
-    t.eta,
-    st_makeline(p.location ORDER BY p.timestamp) AS geom
-   FROM track t
-     JOIN points p ON p.track_id = t.id
-  GROUP BY t.id
+    SELECT
+        t.*,
+        st_makeline(p.location ORDER BY p.timestamp) AS geom
+    FROM track t
+    JOIN points p ON p.track_id = t.id
+    GROUP BY t.id
+

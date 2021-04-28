@@ -55,16 +55,14 @@ CREATE OR REPLACE FUNCTION public.generate_trafic_density_heatmap(
     LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN
-    -- noinspection SqlWithoutWhere
     TRUNCATE heatmap_trafic_density;
 
-    	INSERT INTO heatmap_trafic_density
+    INSERT INTO heatmap_trafic_density
 	SELECT
-		grid.i, grid.j, s.ship_type, count(*)
+		grid.i, grid.j, t.ship_type, count(*)
 	FROM track_with_geom AS t
-	JOIN ship AS s ON t.ship_mmsi = s.mmsi
 	JOIN grid ON ST_Intersects(grid.geom, t.geom)
-	GROUP BY grid.i, grid.j, s.ship_type;
+	GROUP BY grid.i, grid.j, t.ship_type;
 
     RETURN TRUE;
 END
