@@ -1,11 +1,14 @@
 import { Popup, Rectangle } from "react-leaflet";
 import { useQuery } from "react-query";
-import { Button } from "reactstrap";
+import { Button, Col, Row } from "reactstrap";
 import { hashStringToColor } from "../../helpers/hash_strings";
 import { EncCell } from "../../models/enc_cells";
 import { SettingsContext } from "../../providers/settings_provider";
 import { CustomSpinner } from "../custom_spinner";
-import { config } from '../../helpers/constants'
+import { config } from "../../helpers/constants";
+import React, { useState } from "react";
+import { CustomMultiSelect } from "../custom_multi_select";
+import { make_options } from "../../helpers/make_options";
 
 interface Props {
     bounds: { [key: string]: [boolean, number, number] };
@@ -13,18 +16,6 @@ interface Props {
 }
 
 export const MapEncCells = (props: Props) => {
-    const decode_polygon_to_limits = (data: EncCell[]): EncCell[] => {
-        // iterate every location in data and write new limit fields
-        data.forEach((enc_cell) => {
-            enc_cell.westLimit = enc_cell.location.coordinates[0][0][0];
-            enc_cell.northLimit = enc_cell.location.coordinates[0][0][1];
-            enc_cell.eastLimit = enc_cell.location.coordinates[0][2][0];
-            enc_cell.southLimit = enc_cell.location.coordinates[0][2][1];
-        });
-
-        return data;
-    };
-
     const getBoundsString = (bounds: { [key: string]: [boolean, number, number] }): string => {
         let str_buf = "";
         for (let key in bounds) {
@@ -36,9 +27,7 @@ export const MapEncCells = (props: Props) => {
         return str_buf;
     };
     const { isLoading: loading_enc, error: error_enc, data: data_enc } = useQuery(`repoEncData-${getBoundsString(props.bounds)}-${props.search}}`, () =>
-        fetch(`${config.api_url}/enc/get_by_area_bounds?bounds=${getBoundsString(props.bounds)}&search=${props.search}`)
-            .then((res) => res.json())
-            .then((encs) => decode_polygon_to_limits(encs))
+        fetch(`${config.api_url}/enc/get_by_area_bounds?bounds=${getBoundsString(props.bounds)}&search=${props.search}`).then((res) => res.json())
     );
 
     if (error_enc || error_enc) return <>'An error has occurred: ' + error</>;
@@ -55,8 +44,8 @@ export const MapEncCells = (props: Props) => {
                                 {enc.cell_title.toLocaleLowerCase().search(props.search.toLocaleLowerCase()) !== -1 ? (
                                     <Rectangle
                                         bounds={[
-                                            [enc.northLimit, enc.westLimit],
-                                            [enc.southLimit, enc.eastLimit],
+                                            [enc.location.coordinates[0][0][0], enc.location.coordinates[0][0][1]],
+                                            [enc.location.coordinates[0][2][0], enc.location.coordinates[0][2][1]],
                                         ]}
                                         pathOptions={{ color: hashStringToColor(enc.cell_title) }}
                                     >
@@ -65,21 +54,63 @@ export const MapEncCells = (props: Props) => {
                                             <p>{enc.cell_name}</p>
                                             <label>Area</label>
                                             <p className="mt-0">{enc.area} km²</p>
-                                            <label>Tracks</label>
-                                            <div>
-                                                <Button onClick={() => { setSettings({...settings, encIdForTrack: enc.cell_id, showEnc: false})}} color="primary">Show tracks in cell</Button>
-                                            </div>
-                                            <label>Heatmap</label>
-                                            <div>
-                                                <Button
+                                            <h5>Actions</h5>
+                                            {settings.shipTypesSelected.length < make_options(config.ship_types).length ? (
+                                                <a
                                                     onClick={() => {
-                                                        setSettings({ ...settings, encIdForHeatMap: enc.cell_id, showEnc: false });
+                                                        setSettings({ ...settings, shipTypesSelected: make_options(config.ship_types) });
                                                     }}
                                                 >
-                                                    Show heatmap in enc_cell
-                                            </Button>
-                                            </div>
-
+                                                    Choose all
+                                                </a>
+                                            ) : (
+                                                ""
+                                            )}
+                                            <CustomMultiSelect
+                                                options={make_options(config.ship_types)}
+                                                value={settings.shipTypesSelected}
+                                                setValue={(values) => {
+                                                    setSettings({ ...settings, shipTypesSelected: values });
+                                                }}
+                                            />
+                                            <Row className="mt-2">
+                                                <Col md={6}>
+                                                    <Button
+                                                        className="mb-2 w-100"
+                                                        onClick={() => {
+                                                            setSettings({ ...settings, encIdForTrack: enc.cell_id, showEnc: false });
+                                                        }}
+                                                        color="primary"
+                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                    >
+                                                        Show tracks
+                                                    </Button>
+                                                </Col>
+                                                <Col md={6}>
+                                                    <Button
+                                                        className="mb-2 w-100"
+                                                        color="primary"
+                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        onClick={() => {
+                                                            setSettings({ ...settings, encIdForSimpleHeatMap: enc.cell_id, showEnc: false });
+                                                        }}
+                                                    >
+                                                        Simple heatmap
+                                                    </Button>
+                                                </Col>
+                                                <Col md={6}>
+                                                    <Button
+                                                        className="mb-2 w-100"
+                                                        color="primary"
+                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        onClick={() => {
+                                                            setSettings({ ...settings, encIdForTraficDensityHeatMap: enc.cell_id, showEnc: false });
+                                                        }}
+                                                    >
+                                                        Trafic density heatmap
+                                                    </Button>
+                                                </Col>
+                                            </Row>
                                         </Popup>
                                     </Rectangle>
                                 ) : (

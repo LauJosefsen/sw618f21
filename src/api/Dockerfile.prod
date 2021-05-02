@@ -13,6 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
-RUN pip3 install --no-cache-dir uWSGI
+RUN pip3 install --no-cache-dir gunicorn
 EXPOSE 5000
-CMD uwsgi --ini uwsgi.ini
+CMD gunicorn --bind 0.0.0.0:5000 wsgi:app

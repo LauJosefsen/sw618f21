@@ -1,5 +1,10 @@
 import configparser
+
+import numpy as np
 import psycopg2
+from psycopg2.extensions import register_adapter, AsIs
+
+register_adapter(np.int64, AsIs)
 
 
 class SqlConnector:

@@ -1,6 +1,9 @@
 import React from "react";
 
 export interface settings {
+    // Ship types
+    shipTypesSelected: { value: string; label: string }[];
+
     // ENC:
     showEnc: boolean;
     encBounds: { [key: string]: [boolean, number, number] };
@@ -10,7 +13,8 @@ export interface settings {
     encIdForTrack: number | undefined;
 
     // HEATMAP
-    encIdForHeatMap: number | undefined;
+    encIdForSimpleHeatMap: number | undefined;
+    encIdForTraficDensityHeatMap: number | undefined;
 }
 
 export interface settings_with_setter {
@@ -26,6 +30,8 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         showEnc: true,
         encBounds: { small: [true, 0, 1000000], medium: [true, 1000000, 10000000], large: [true, 10000000, 10000000000000] },
         encIdForTrack: undefined,
-        encIdForHeatMap: undefined,
+        encIdForSimpleHeatMap: undefined,
+        encIdForTraficDensityHeatMap: undefined,
+        shipTypesSelected: [],
     },
 });

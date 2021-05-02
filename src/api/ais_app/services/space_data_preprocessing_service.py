@@ -1,6 +1,10 @@
 import multiprocessing
+from datetime import datetime
+
+import numpy as np
 from pqdm.processes import pqdm
 import geopy.distance
+import pandas as pd
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
@@ -14,9 +18,7 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         # Lets remove all the previous clustering.
-        # noinspection SqlWithoutWhere
-        cursor.execute("UPDATE heatmap_trafic_density_1000m SET intensity = 0")
-        cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
+        cursor.execute("TRUNCATE track RESTART IDENTITY CASCADE")
 
         print("[CLUSTER] Cleared previous cluster.")
 
@@ -39,15 +41,9 @@ class SpaceDataPreprocessingService:
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
-        cursor.execute(
-            """
-                DELETE FROM ship WHERE mmsi IN
-                (SELECT mmsi FROM SHIP as s WHERE (SELECT count(*) FROM track WHERE ship_mmsi = s.mmsi) = 0)
-            """
-        )
 
         cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
-        cursor.execute("REFRESH MATERIALIZED VIEW heatmap_10m")
+        cursor.execute("REFRESH MATERIALIZED VIEW simple_heatmap")
 
         connection.commit()
         connection.close()
@@ -178,24 +174,22 @@ class SpaceDataPreprocessingService:
         """
         cursor.execute(query_inserts)
 
+    @staticmethod
+    def replace_nan_with_none(str_in):
+        if str_in == "nan":
+            return None
+        return str_in
+
+    @staticmethod
+    def replace_nan_with_none_series(series):
+        series.apply(SpaceDataPreprocessingService.replace_nan_with_none)
+
     def cluster_mmsi(self, mmsi):
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
 
-        # make a new ship, and cluster as normal
         query = """
-                    INSERT INTO public.ship
-                    (MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d)
-                    SELECT MMSI, IMO, mobile_type, callsign, name, ship_type, width, length, draught, a, b, c, d
-                    FROM public.data WHERE mmsi= %s LIMIT 1 RETURNING mmsi
-                    """
-
-        cursor.execute(query, tuple(mmsi))
-        ship_id = cursor.fetchall()[0]
-
-        query = """
-                    SELECT mmsi, timestamp, longitude, latitude, rot,
-                    sog, cog, heading, position_fixing_device_type FROM public.data
+                    SELECT * FROM public.data
                     WHERE mmsi = %s AND
                     (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
                     longitude <= 180 AND longitude >=-180 AND
@@ -222,7 +216,7 @@ class SpaceDataPreprocessingService:
         cursor.execute(
             update_threshold_query,
             (
-                0 if len(count_before) == 0 else 1,
+                0 if count_before == 0 else 1,
                 0 if len(tracks) == 0 else 1,
                 count_before,
                 count_after,
@@ -230,25 +224,84 @@ class SpaceDataPreprocessingService:
         )
 
         # insert tracks and points:
-        self.__insert_tracks(ship_id, tracks, cursor)
+        self.__insert_tracks(tracks, cursor)
 
         connection.commit()
         connection.close()
 
     @staticmethod
-    def __insert_tracks(ship_id, tracks, cursor):
+    def __insert_tracks(tracks, cursor):
         tracks = [track for track in tracks if len(track) > 0]
 
-        for index, course in enumerate(tracks):
-            # insert course
+        for index, track in enumerate(tracks):
+            # insert track
+            df = pd.DataFrame.from_dict(track)
+
+            def apply_datetime_if_not_none(str_in):
+                try:
+                    d = datetime.strptime(str_in, "%d/%m/%Y %H:%M:%S")
+                except ValueError:
+                    d = None
+                return d
+
+            df["eta"] = df["eta"].astype(str).apply(apply_datetime_if_not_none)
+
+            most_common_row = (
+                df.groupby(
+                    [
+                        "destination",
+                        "cargo_type",
+                        "eta",
+                        "mmsi",
+                        "imo",
+                        "mobile_type",
+                        "callsign",
+                        "name",
+                        "ship_type",
+                        "width",
+                        "length",
+                        "draught",
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                    ],
+                    dropna=False,
+                )
+                .size()
+                .idxmax(skipna=False)
+            )
+
+            most_common_row_with_none_instead_of_nan = [
+                None if type(x).__module__ == np.__name__ and np.isnan(x) else x
+                for x in most_common_row
+            ]
+
             query = """
-                            INSERT INTO public.track (ship_mmsi) VALUES (%s) RETURNING id;
-                        """
-            cursor.execute(query, tuple(ship_id))
+                INSERT INTO public.track (
+                    destination,
+                    cargo_type,
+                    eta,
+                    mmsi,
+                    imo,
+                    mobile_type,
+                    callsign,
+                    name,
+                    ship_type,
+                    width,
+                    length,
+                    draught,
+                    a,
+                    b,
+                    c,
+                    d
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                """
+            cursor.execute(query, most_common_row_with_none_instead_of_nan)
             track_id = cursor.fetchall()[0]
 
             # insert points
-            for point in course:
+            for point in track:
                 query = """
                                 INSERT INTO public.points
                                 (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type)

@@ -1,57 +1,68 @@
 -- trafic_density_heatmap
-CREATE TABLE IF NOT EXISTS heatmap_trafic_density_1000m
+CREATE TABLE IF NOT EXISTS grid(
+    i int,
+    j int,
+    geom geometry,
+    PRIMARY KEY (i,j)
+);
+
+CREATE INDEX IF NOT EXISTS grid_geom_index
+ ON grid
+ USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS heatmap_trafic_density
 (
 	i int,
 	j int,
-	geom geometry,
+	FOREIGN KEY (i,j) REFERENCES grid(i, j),
+	ship_type varchar(50),
 	intensity int,
-	PRIMARY KEY (i,j)
+    PRIMARY KEY (i,j,ship_type)
 );
 
-CREATE OR REPLACE FUNCTION public.generate_trafic_density_heatmap(
-	)
+CREATE OR REPLACE FUNCTION public.create_grid(grid_size_meters int)
     RETURNS boolean
     LANGUAGE 'plpgsql'
 AS $BODY$
 DECLARE
-    TABLE_RECORD RECORD;
-    CNT          BIGINT;
 BEGIN
-    select count(*) into CNT from heatmap_trafic_density_10m;
+    TRUNCATE grid CASCADE;
 
-    -- if table is empty, insert grid
-    if cnt == 0 then
-        INSERT INTO heatmap_trafic_density_10m
-        SELECT ST_Transform(geom, 4326) as geom, 0
+        INSERT INTO grid
+        SELECT i, j, ST_Transform(geom, 4326) as geom
         FROM
         (
             SELECT
             (
-                ST_SquareGrid(100, ST_Transform(location, 3857))
+                ST_SquareGrid(grid_size_meters, ST_Transform(location, 3857))
             ).* as geom
             FROM
             (
                 SELECT location FROM enc_cells ORDER BY ST_Area(location) DESC LIMIT 1
             ) as enc
         ) as grid_bounds;
-    else
-        -- noinspection SqlWithoutWhere
-        UPDATE heatmap_trafic_density_10m SET intensity = 0;
-    end if;
+    RETURN TRUE;
+END
+$BODY$;
 
 
-    FOR TABLE_RECORD IN
-		SELECT geom FROM track_with_geom
 
-        LOOP
-            UPDATE heatmap_trafic_density_10m
-				SET intensity = intensity + 1
-				WHERE ST_Intersects(
-						geom,
-						TABLE_RECORD.geom
-					);
 
-        END LOOP;
+
+CREATE OR REPLACE FUNCTION public.generate_trafic_density_heatmap(
+	)
+    RETURNS boolean
+    LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+    TRUNCATE heatmap_trafic_density;
+
+    INSERT INTO heatmap_trafic_density
+	SELECT
+		grid.i, grid.j, t.ship_type, count(*)
+	FROM track_with_geom AS t
+	JOIN grid ON ST_Intersects(grid.geom, t.geom)
+	GROUP BY grid.i, grid.j, t.ship_type;
 
     RETURN TRUE;
 END
