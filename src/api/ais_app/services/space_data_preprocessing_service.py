@@ -48,9 +48,9 @@ class SpaceDataPreprocessingService:
         # Uncomment this line and comment the line above to run as single thread.
         # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
-        self.tcp.closeall()
+        tcp.tcp.closeall()
 
-        assert len(self.failed_processing_mmsis) == 0
+        assert len(failed_mmsi_queue) == 0
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
