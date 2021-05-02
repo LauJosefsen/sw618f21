@@ -40,7 +40,11 @@ class SpaceDataPreprocessingService:
         tcp = self.sql_connector.get_threading_pool()
         failed_mmsi_queue = queue.Queue()
 
-        pqdm(mmsi_list, lambda x: self.cluster_mmsi(x, tcp, failed_mmsi_queue), n_jobs=multiprocessing.cpu_count())
+        pqdm(
+            mmsi_list,
+            lambda x: self.cluster_mmsi(x, tcp, failed_mmsi_queue),
+            n_jobs=multiprocessing.cpu_count(),
+        )
         # Uncomment this line and comment the line above to run as single thread.
         # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
@@ -239,7 +243,6 @@ class SpaceDataPreprocessingService:
         except BaseException as e:
             print(e)
             failed_mmsi_queue.put(mmsi)
-
 
     @staticmethod
     def __insert_tracks(tracks, cursor):
