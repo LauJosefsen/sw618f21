@@ -17,7 +17,7 @@ jobs:
           port: 22
           script: |
             cd /home/ais/sw618f21/
-            git checkout ${GITHUB_REF##*/}
+            git checkout ${{GITHUB_REF##*/}}
             git pull
             docker-compose -f docker-compose.prod.yml build
             docker-compose -f docker-compose.prod.yml up -d
