@@ -15,9 +15,9 @@ class HeatmapRepository:
         cursor = connection.cursor()
         query = """
                         WITH heatmap_data AS (
-                            SELECT 
-                                grid_point, 
-                                SUM(count) AS intensity 
+                            SELECT
+                                grid_point,
+                                SUM(count) AS intensity
                             FROM simple_heatmap as heatmap
                             JOIN enc_cells as enc on st_contains(enc.location, heatmap.grid_point)
                             WHERE 

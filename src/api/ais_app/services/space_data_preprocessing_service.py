@@ -47,7 +47,7 @@ class SpaceDataPreprocessingService:
         )
 
         cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
-        cursor.execute("REFRESH MATERIALIZED VIEW heatmap_10m")
+        cursor.execute("REFRESH MATERIALIZED VIEW simple_heatmap")
 
         connection.commit()
         connection.close()
