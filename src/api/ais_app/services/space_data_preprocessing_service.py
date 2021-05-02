@@ -30,7 +30,7 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        self.__before_rule_coordinates(cursor)
+        self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()
@@ -49,7 +49,7 @@ class SpaceDataPreprocessingService:
         connection.close()
 
     @staticmethod
-    def __before_rule_coordinates(cursor):
+    def __before_invalid_coords_and_ship_types_and_intersection(cursor):
         cursor.execute("TRUNCATE data_error_rate")
 
         query_inserts = """
@@ -156,7 +156,7 @@ class SpaceDataPreprocessingService:
                 'Non-valid-coordinates/shipType',
                 (SELECT after_sar_mmsi FROM error_rates),
                 (SELECT after_invalid_coord_and_ship_type_mmsi FROM error_rates),
-                (SELECT after_ship_type_point FROM error_rates),
+                (SELECT after_sar_point FROM error_rates),
                 (SELECT after_invalid_coord_and_ship_type_point FROM error_rates)
            ),(
                 'mmsiIsSar',
@@ -199,11 +199,11 @@ class SpaceDataPreprocessingService:
         cursor.execute(query, tuple(mmsi))
         points = [build_dict(cursor, row) for row in cursor.fetchall()]
 
-        count_before = len(points)
+        count_before_points = len(points)
         # After method which looks at points
         tracks = self.space_data_preprocessing(points)
 
-        count_after = sum(len(track) for track in tracks)
+        count_after_points = sum(len(track) for track in tracks)
 
         update_threshold_query = """
         UPDATE data_error_rate SET
@@ -216,10 +216,10 @@ class SpaceDataPreprocessingService:
         cursor.execute(
             update_threshold_query,
             (
-                0 if count_before == 0 else 1,
+                0 if count_before_points == 0 else 1,
                 0 if len(tracks) == 0 else 1,
-                count_before,
-                count_after,
+                count_before_points,
+                count_after_points,
             ),
         )
 
