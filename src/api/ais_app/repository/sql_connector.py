@@ -1,8 +1,10 @@
 import configparser
+import multiprocessing
 
 import numpy as np
 import psycopg2
 from psycopg2.extensions import register_adapter, AsIs
+from psycopg2.pool import ThreadedConnectionPool
 
 register_adapter(np.int64, AsIs)
 
@@ -39,7 +41,5 @@ class SqlConnector:
     def get_db_connection(self):
         return psycopg2.connect(dsn=self.dsn)
 
-    @staticmethod
-    def get_db_connection_from_thread_pool():
-        # todo: Might be interesting to keep a global thread pool, and just "lease" connections when requested.
-        pass
+    def get_threading_pool(self):
+        return ThreadedConnectionPool(1, multiprocessing.cpu_count(), dsn=self.dsn)

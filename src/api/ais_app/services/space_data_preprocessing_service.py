@@ -1,8 +1,9 @@
 import multiprocessing
+import queue
 from datetime import datetime
 
 import numpy as np
-from pqdm.processes import pqdm
+from pqdm.threads import pqdm
 import geopy.distance
 import pandas as pd
 
@@ -23,7 +24,7 @@ class SpaceDataPreprocessingService:
         print("[CLUSTER] Cleared previous cluster.")
 
         query = """
-            SELECT DISTINCT mmsi FROM public.data WHERE mmsi < 111000000 OR mmsi > 111999999
+            SELECT DISTINCT mmsi FROM public.data WHERE (mmsi < 111000000 OR mmsi > 111999999)
         """
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
@@ -36,8 +37,20 @@ class SpaceDataPreprocessingService:
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        pqdm(mmsi_list, self.cluster_mmsi, n_jobs=multiprocessing.cpu_count())
+        tcp = self.sql_connector.get_threading_pool()
+        failed_mmsi_queue = queue.Queue()
+
+        pqdm(
+            mmsi_list,
+            lambda x: self.cluster_mmsi(x, tcp, failed_mmsi_queue),
+            n_jobs=multiprocessing.cpu_count(),
+        )
+        # Uncomment this line and comment the line above to run as single thread.
         # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
+
+        tcp.tcp.closeall()
+
+        assert len(failed_mmsi_queue) == 0
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
@@ -59,15 +72,15 @@ class SpaceDataPreprocessingService:
                 count(*) as begin_point,
                 count(DISTINCT mmsi) FILTER
                     (
-                        WHERE mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                     ) as after_sar_mmsi,
                 count(*) FILTER
                     (
-                        WHERE mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                     ) as after_sar_point,
                 count(DISTINCT mmsi) FILTER
                     (
-                        WHERE  mmsi < 111000000 OR mmsi > 111999999
+                        WHERE  (mmsi < 111000000 OR mmsi > 111999999)
                         AND
                         (
                             mobile_type = 'Class A' OR mobile_type = 'Class B'
@@ -75,7 +88,7 @@ class SpaceDataPreprocessingService:
                     ) as after_ship_type_mmsi,
                 count(*) FILTER
                     (
-                        WHERE  mmsi < 111000000 OR mmsi > 111999999
+                        WHERE  (mmsi < 111000000 OR mmsi > 111999999)
                         AND
                         (
                             mobile_type = 'Class A' OR mobile_type = 'Class B'
@@ -83,7 +96,7 @@ class SpaceDataPreprocessingService:
                     ) as after_ship_type_point,
                 count(DISTINCT mmsi) FILTER
                     (
-                        WHERE mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                         AND NOT
                         (
                             (
@@ -93,7 +106,7 @@ class SpaceDataPreprocessingService:
                     ) as after_invalid_coord_mmsi,
                 count(*) FILTER
                     (
-                        WHERE mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                         AND NOT
                         (
                             (
@@ -103,8 +116,7 @@ class SpaceDataPreprocessingService:
                     ) as after_invalid_coord_point,
                 count(DISTINCT mmsi) FILTER
                     (
-                        WHERE
-                        mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                         AND NOT
                         (
                             (
@@ -118,8 +130,7 @@ class SpaceDataPreprocessingService:
                     ) as after_invalid_coord_and_ship_type_mmsi,
                 count(*) FILTER
                     (
-                        WHERE
-                        mmsi < 111000000 OR mmsi > 111999999
+                        WHERE (mmsi < 111000000 OR mmsi > 111999999)
                         AND NOT
                         (
                             (
@@ -184,50 +195,54 @@ class SpaceDataPreprocessingService:
     def replace_nan_with_none_series(series):
         series.apply(SpaceDataPreprocessingService.replace_nan_with_none)
 
-    def cluster_mmsi(self, mmsi):
-        connection = self.sql_connector.get_db_connection()
-        cursor = connection.cursor()
+    def cluster_mmsi(self, mmsi, tcp, failed_mmsi_queue):
+        try:
+            connection = tcp.getconn()
+            cursor = connection.cursor()
 
-        query = """
-                    SELECT * FROM public.data
-                    WHERE mmsi = %s AND
-                    (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
-                    longitude <= 180 AND longitude >=-180 AND
-                    latitude <= 90 AND latitude >= -90 ORDER BY timestamp
-                """
+            query = """
+                        SELECT * FROM public.data
+                        WHERE mmsi = %s AND
+                        (mobile_type = 'Class A' OR mobile_type = 'Class B') AND
+                        longitude <= 180 AND longitude >=-180 AND
+                        latitude <= 90 AND latitude >= -90 ORDER BY timestamp
+                    """
 
-        cursor.execute(query, tuple(mmsi))
-        points = [build_dict(cursor, row) for row in cursor.fetchall()]
+            cursor.execute(query, tuple(mmsi))
+            points = [build_dict(cursor, row) for row in cursor.fetchall()]
 
-        count_before_points = len(points)
-        # After method which looks at points
-        tracks = self.space_data_preprocessing(points)
+            count_before_points = len(points)
+            # After method which looks at points
+            tracks = self.space_data_preprocessing(points)
 
-        count_after_points = sum(len(track) for track in tracks)
+            count_after_points = sum(len(track) for track in tracks)
 
-        update_threshold_query = """
-        UPDATE data_error_rate SET
-            mmsi_count_before = mmsi_count_before + %s,
-            mmsi_count_after = mmsi_count_after + %s,
-            point_count_before = point_count_before + %s,
-            point_count_after = point_count_after + %s
-        WHERE rule_name = 'thresholdCompleteness';
-        """
-        cursor.execute(
-            update_threshold_query,
-            (
-                0 if count_before_points == 0 else 1,
-                0 if len(tracks) == 0 else 1,
-                count_before_points,
-                count_after_points,
-            ),
-        )
+            update_threshold_query = """
+            UPDATE data_error_rate SET
+                mmsi_count_before = mmsi_count_before + %s,
+                mmsi_count_after = mmsi_count_after + %s,
+                point_count_before = point_count_before + %s,
+                point_count_after = point_count_after + %s
+            WHERE rule_name = 'thresholdCompleteness';
+            """
+            cursor.execute(
+                update_threshold_query,
+                (
+                    0 if count_before_points == 0 else 1,
+                    0 if len(tracks) == 0 else 1,
+                    count_before_points,
+                    count_after_points,
+                ),
+            )
 
-        # insert tracks and points:
-        self.__insert_tracks(tracks, cursor)
+            # insert tracks and points:
+            self.__insert_tracks(tracks, cursor)
 
-        connection.commit()
-        connection.close()
+            connection.commit()
+            tcp.putconn(connection)
+        except BaseException as e:
+            print(e)
+            failed_mmsi_queue.put(mmsi)
 
     @staticmethod
     def __insert_tracks(tracks, cursor):
