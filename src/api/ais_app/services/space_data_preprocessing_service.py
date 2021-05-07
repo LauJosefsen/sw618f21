@@ -1,3 +1,4 @@
+import configparser
 import multiprocessing
 import queue
 from datetime import datetime
@@ -13,6 +14,15 @@ from ais_app.repository.sql_connector import SqlConnector
 
 class SpaceDataPreprocessingService:
     sql_connector = SqlConnector()
+
+    def __init__(self):
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+
+        self.threshold_completeness = int(config["space_data_preprocessing"]["threshold_completeness"])
+        self.threshold_space = int(config["space_data_preprocessing"]["threshold_space"])
+        self.split_time = int(config["space_data_preprocessing"]["split_time"])
+        self.min_dist_to_compare = float(config["space_data_preprocessing"]["min_dist_to_compare"])
 
     def cluster_points(self):
         connection = self.sql_connector.get_db_connection()
@@ -213,7 +223,7 @@ class SpaceDataPreprocessingService:
 
             count_before_points = len(points)
             # After method which looks at points
-            tracks = self.space_data_preprocessing(points)
+            tracks = self.space_data_preprocessing(points, self.threshold_completeness, self.threshold_space)
 
             count_after_points = sum(len(track) for track in tracks)
 
@@ -339,8 +349,8 @@ class SpaceDataPreprocessingService:
     def space_data_preprocessing(
         self,
         track_points: list,
-        threshold_completeness=20,
-        threshold_space=25,
+        threshold_completeness,
+        threshold_space,
     ) -> list[list]:
         """
         Takes a list of points, and returns a list of groups of points.
@@ -434,15 +444,15 @@ class SpaceDataPreprocessingService:
         :return: Difference in speed in knots
         """
 
-        if abs((b["timestamp"] - a["timestamp"]).total_seconds()) > 9000:
-            return 99999999999
+        if abs((b["timestamp"] - a["timestamp"]).total_seconds()) > self.split_time:
+            return 2*self.threshold_space
 
         distance = geopy.distance.distance(
             (a["latitude"], a["longitude"]),
             (b["latitude"], b["longitude"]),
         ).nautical
 
-        if distance <= 0.26:
+        if distance <= self.min_dist_to_compare:
             return 0
 
         actual_speed = self.get_speed_between_points(a, b)
@@ -451,7 +461,7 @@ class SpaceDataPreprocessingService:
             if b["sog"] is None:
                 return 0
             else:
-                return 999999
+                return 2*self.threshold_space
 
         return actual_speed - a["sog"]
 
