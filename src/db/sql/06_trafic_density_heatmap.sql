@@ -59,9 +59,9 @@ BEGIN
 
     INSERT INTO heatmap_trafic_density
 	SELECT
-		grid.i, grid.j, t.ship_type, count(*)
-	FROM track_with_geom AS t
-	JOIN grid ON ST_Intersects(grid.geom, t.geom)
+		grid.i, grid.j, t.ship_type,
+	    SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, grid.geom)))
+	FROM track_with_geom AS t, grid
 	GROUP BY grid.i, grid.j, t.ship_type;
 
     RETURN TRUE;
