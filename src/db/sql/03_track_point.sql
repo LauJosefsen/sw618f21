@@ -52,5 +52,9 @@ AS
         max(p.timestamp) as end_ts
     FROM track t
     JOIN points p ON p.track_id = t.id
-    GROUP BY t.id
+    GROUP BY t.id;
+
+CREATE INDEX track_with_geom_index
+  ON track_with_geom
+  USING GIST (geom);
 

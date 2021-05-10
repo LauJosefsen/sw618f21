@@ -24,14 +24,14 @@ class SpaceDataPreprocessingService:
         print("[CLUSTER] Cleared previous cluster.")
 
         query = """
-            SELECT DISTINCT mmsi FROM public.data WHERE (mmsi < 111000000 OR mmsi > 111999999)
+            SELECT DISTINCT mmsi FROM public.data WHERE (mmsi < 111000000 OR mmsi > 111999999) AND mmsi = 219005885 
         """
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
+        # self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()

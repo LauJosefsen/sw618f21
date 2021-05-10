@@ -13,3 +13,4 @@ pyproj
 shapely
 simplejson
 pqdm
+pillow
