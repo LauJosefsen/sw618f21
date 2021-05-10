@@ -19,10 +19,16 @@ class SpaceDataPreprocessingService:
         config = configparser.ConfigParser()
         config.read("config.ini")
 
-        self.threshold_completeness = int(config["space_data_preprocessing"]["threshold_completeness"])
-        self.threshold_space = int(config["space_data_preprocessing"]["threshold_space"])
+        self.threshold_completeness = int(
+            config["space_data_preprocessing"]["threshold_completeness"]
+        )
+        self.threshold_space = int(
+            config["space_data_preprocessing"]["threshold_space"]
+        )
         self.split_time = int(config["space_data_preprocessing"]["split_time"])
-        self.min_dist_to_compare = float(config["space_data_preprocessing"]["min_dist_to_compare"])
+        self.min_dist_to_compare = float(
+            config["space_data_preprocessing"]["min_dist_to_compare"]
+        )
 
     def cluster_points(self):
         connection = self.sql_connector.get_db_connection()
@@ -223,7 +229,9 @@ class SpaceDataPreprocessingService:
 
             count_before_points = len(points)
             # After method which looks at points
-            tracks = self.space_data_preprocessing(points, self.threshold_completeness, self.threshold_space)
+            tracks = self.space_data_preprocessing(
+                points, self.threshold_completeness, self.threshold_space
+            )
 
             count_after_points = sum(len(track) for track in tracks)
 
@@ -445,7 +453,7 @@ class SpaceDataPreprocessingService:
         """
 
         if abs((b["timestamp"] - a["timestamp"]).total_seconds()) > self.split_time:
-            return 2*self.threshold_space
+            return 2 * self.threshold_space
 
         distance = geopy.distance.distance(
             (a["latitude"], a["longitude"]),
@@ -461,7 +469,7 @@ class SpaceDataPreprocessingService:
             if b["sog"] is None:
                 return 0
             else:
-                return 2*self.threshold_space
+                return 2 * self.threshold_space
 
         return actual_speed - a["sog"]
 
