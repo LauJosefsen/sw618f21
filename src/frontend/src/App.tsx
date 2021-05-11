@@ -1,6 +1,6 @@
 import "./App.css";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, Rectangle, TileLayer } from "react-leaflet";
 
 import { CustomSidebar } from "./shared/sidebar";
 import { MapEncCells } from "./shared/map/enc_cells";
@@ -50,6 +50,14 @@ function App() {
                                 </>
                             )}
                         </SettingsContext.Consumer>
+
+                        <Rectangle
+                            bounds={[
+                                [55.784, 5.625],
+                                [54.238, 8.4375],
+                            ]}
+                            pathOptions={{ color: "#ffffff" }}
+                        ></Rectangle>
                         {/* <MapHeatMapGrid/> */}
                         {/* <MapPoints /> */}
                     </MapContainer>
