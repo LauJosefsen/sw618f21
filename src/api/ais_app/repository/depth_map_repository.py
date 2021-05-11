@@ -12,10 +12,10 @@ class DepthMapRepository:
         cursor = connection.cursor()
 
         query = """
-                SELECT 
+                SELECT
                     ST_AsGeoJson(ST_SetSRID(grid.geom, 3857)) as geom,
                     max_draught_map.min_depth as depth
-                FROM max_draught_map 
+                FROM max_draught_map
                 JOIN grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
                 WHERE ST_Intersects(
                     ST_SetSRID(ST_MakePolygon(ST_GeomFromText(
@@ -23,7 +23,6 @@ class DepthMapRepository:
                         )), 4326),
                     grid.geom
                 )
-                
                 """
 
         cursor.execute(query, (w, n, e, n, e, s, w, s, w, n))
