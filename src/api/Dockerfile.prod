@@ -15,4 +15,4 @@ COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN pip3 install --no-cache-dir gunicorn
 EXPOSE 5000
-CMD gunicorn --bind 0.0.0.0:5000 wsgi:app
+CMD gunicorn --bind 0.0.0.0:5000 wsgi:app --timeout 0 --workers 16

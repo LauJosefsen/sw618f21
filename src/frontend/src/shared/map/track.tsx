@@ -16,8 +16,8 @@ interface Props {
 
 export const MapTrack = (props: Props) => {
     const { isLoading, error, data } = useQuery(["tracks_in_enc", props.enc_cell_id, props.ship_types], () =>
-        fetch(`${config.api_url}/tracks/get_by_enc_id?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
-    );
+        fetch(`${config.api_url}/tracks/get_by_enc_id?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json(), )
+    , {refetchOnMount: false});
 
     if (error || isLoading) return <CustomSpinner message="Loading tracks..." />;
 
