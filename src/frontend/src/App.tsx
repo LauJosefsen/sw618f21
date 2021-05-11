@@ -16,11 +16,12 @@ function App() {
     const [local_settings, setSettings] = useState<settings>({
         shipTypesSelected: make_options(config.ship_types),
         encSearch: "",
-        showEnc: true,
+        showEnc: false,
         encBounds: { ExtraSmall: [true, 0, 100], Small: [true, 100, 3000], Medium: [true, 3000, 50000], Large: [true, 50000, 10000000] },
         encIdForTrack: undefined,
         encIdForSimpleHeatMap: undefined,
         encIdForTraficDensityHeatMap: undefined,
+        showDepthMap: true,
     });
 
     return (
@@ -28,12 +29,13 @@ function App() {
             <SettingsContext.Provider value={{ settings: local_settings, setSettings: setSettings }}>
                 <CustomSidebar />
                 <header className="App-header">
-                    <MapContainer center={[56, 10]} zoom={7} scrollWheelZoom>
+                    <MapContainer center={[56, 10]} zoom={7} maxZoom={13} minZoom={6} scrollWheelZoom>
                         <TileLayer attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <TileLayer url={`${config.api_url}/depth_map/tile/{z}/{x}/{y}`} />
+
                         <SettingsContext.Consumer>
                             {({ settings }) => (
                                 <>
+                                    {settings.showDepthMap ? <TileLayer url={`${config.api_url}/depth_map/tile/{z}/{x}/{y}`} /> : ""}
                                     {settings.showEnc ? <MapEncCells bounds={settings.encBounds} search={settings.encSearch} /> : ""}
                                     {settings.encIdForTrack ? <MapTrack enc_cell_id={settings.encIdForTrack} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} /> : ""}
 
@@ -50,16 +52,6 @@ function App() {
                                 </>
                             )}
                         </SettingsContext.Consumer>
-
-                        <Rectangle
-                            bounds={[
-                                [55.784, 5.625],
-                                [54.238, 8.4375],
-                            ]}
-                            pathOptions={{ color: "#ffffff" }}
-                        ></Rectangle>
-                        {/* <MapHeatMapGrid/> */}
-                        {/* <MapPoints /> */}
                     </MapContainer>
                 </header>
             </SettingsContext.Provider>

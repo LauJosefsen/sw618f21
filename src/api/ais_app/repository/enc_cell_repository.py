@@ -119,4 +119,3 @@ class EncCellRepository:
         largest["location"] = json.loads(largest["location"])
 
         return largest
-
