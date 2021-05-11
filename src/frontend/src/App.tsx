@@ -1,6 +1,6 @@
 import "./App.css";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, Rectangle, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer } from "react-leaflet";
 
 import { CustomSidebar } from "./shared/sidebar";
 import { MapEncCells } from "./shared/map/enc_cells";

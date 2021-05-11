@@ -6,7 +6,7 @@ import { EncCell } from "../../models/enc_cells";
 import { SettingsContext } from "../../providers/settings_provider";
 import { CustomSpinner } from "../custom_spinner";
 import { config } from "../../helpers/constants";
-import React, { useState } from "react";
+import React from "react";
 import { CustomMultiSelect } from "../custom_multi_select";
 import { make_options } from "../../helpers/make_options";
 
@@ -81,7 +81,7 @@ export const MapEncCells = (props: Props) => {
                                                             setSettings({ ...settings, encIdForTrack: enc.cell_id, showEnc: false });
                                                         }}
                                                         color="primary"
-                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        disabled={settings.shipTypesSelected.length === 0}
                                                     >
                                                         Show tracks
                                                     </Button>
@@ -90,7 +90,7 @@ export const MapEncCells = (props: Props) => {
                                                     <Button
                                                         className="mb-2 w-100"
                                                         color="primary"
-                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        disabled={settings.shipTypesSelected.length === 0}
                                                         onClick={() => {
                                                             setSettings({ ...settings, encIdForSimpleHeatMap: enc.cell_id, showEnc: false });
                                                         }}
@@ -102,7 +102,7 @@ export const MapEncCells = (props: Props) => {
                                                     <Button
                                                         className="mb-2 w-100"
                                                         color="primary"
-                                                        disabled={settings.shipTypesSelected.length == 0}
+                                                        disabled={settings.shipTypesSelected.length === 0}
                                                         onClick={() => {
                                                             setSettings({ ...settings, encIdForTraficDensityHeatMap: enc.cell_id, showEnc: false });
                                                         }}
