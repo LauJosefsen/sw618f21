@@ -31,7 +31,7 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        # self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
+        self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()
