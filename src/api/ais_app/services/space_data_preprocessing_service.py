@@ -24,7 +24,7 @@ class SpaceDataPreprocessingService:
         print("[CLUSTER] Cleared previous cluster.")
 
         query = """
-            SELECT DISTINCT mmsi FROM public.data WHERE (mmsi < 111000000 OR mmsi > 111999999) AND mmsi = 219005885 
+            SELECT DISTINCT mmsi FROM public.data WHERE (mmsi < 111000000 OR mmsi > 111999999)
         """
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
