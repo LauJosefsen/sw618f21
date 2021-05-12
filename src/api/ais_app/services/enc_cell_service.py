@@ -27,3 +27,6 @@ class EncCellService:
                 print(f"Importing {entry.name}")
                 self.__enc_cell_repository.import_enc_file(entry.path)
                 print(f"Done importing {entry.name}")
+
+    def get_largest(self):
+        return self.__enc_cell_repository.get_largest()

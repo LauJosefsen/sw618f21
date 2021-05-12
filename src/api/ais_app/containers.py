@@ -3,6 +3,7 @@
 from dependency_injector import containers, providers
 
 from ais_app.services.ais_data_service import AisDataService
+from ais_app.services.depth_map_service import DepthMapService
 from ais_app.services.enc_cell_service import EncCellService
 from ais_app.services.heatmap_service import HeatmapService
 from ais_app.services.import_ais_service import ImportAisService
@@ -19,3 +20,4 @@ class Container(containers.DeclarativeContainer):
     import_ais_service = providers.Factory(ImportAisService)
     space_data_preprocessing_service = providers.Factory(SpaceDataPreprocessingService)
     track_service = providers.Factory(TrackService)
+    depth_map_service = providers.Factory(DepthMapService)

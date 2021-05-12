@@ -65,31 +65,14 @@ export const CustomSidebar = () => {
                                 </>
                             )}
 
-                            {/* <h3>Tracks</h3>
-                            <Label>Limit</Label>
-                            <Input
-                                type="number"
-                                value={settings.trackLimit}
-                                onChange={(e) => {
-                                    setSettings({ ...settings, trackLimit: parseInt(e.currentTarget.value) });
+                            <h3>Depth map</h3>
+                            <Button
+                                onClick={() => {
+                                    setSettings({ ...settings, showDepthMap: !settings.showDepthMap });
                                 }}
-                            />
-                            <Label>Offset</Label>
-                            <Input
-                                type="number"
-                                value={settings.trackOffset}
-                                onChange={(e) => {
-                                    setSettings({ ...settings, trackOffset: parseInt(e.currentTarget.value) });
-                                }}
-                            />
-                            <Label>Search</Label>
-                            <Input
-                                type="text"
-                                value={settings.trackSearch}
-                                onChange={(e) => {
-                                    setSettings({ ...settings, trackSearch: e.currentTarget.value });
-                                }}
-                            /> */}
+                            >
+                                {settings.showDepthMap ? "Hide" : "Show"}
+                            </Button>
 
                             <Button className="sidebar-button" onClick={() => setSidebarOpen(false)}>
                                 Close sidebar

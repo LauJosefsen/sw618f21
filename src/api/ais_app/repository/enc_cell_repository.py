@@ -104,3 +104,18 @@ class EncCellRepository:
 
         connection.commit()
         connection.close()
+
+    def get_largest(self):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+
+        query = """
+                    SELECT ST_AsGeoJson(location) as location FROM enc_cells ORDER BY ST_Area(location) DESC LIMIT 1
+                """
+
+        cursor.execute(query)
+        largest = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+
+        largest["location"] = json.loads(largest["location"])
+
+        return largest

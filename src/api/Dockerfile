@@ -1,6 +1,5 @@
 FROM python:3.9
 WORKDIR /api
-ENV FLASK_APP=./app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
   gcc=4:8.3.0-1 \

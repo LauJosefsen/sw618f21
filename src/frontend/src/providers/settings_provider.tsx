@@ -15,6 +15,9 @@ export interface settings {
     // HEATMAP
     encIdForSimpleHeatMap: number | undefined;
     encIdForTraficDensityHeatMap: number | undefined;
+
+    // DepthMap
+    showDepthMap: boolean;
 }
 
 export interface settings_with_setter {
@@ -33,5 +36,6 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         encIdForSimpleHeatMap: undefined,
         encIdForTraficDensityHeatMap: undefined,
         shipTypesSelected: [],
+        showDepthMap: false,
     },
 });

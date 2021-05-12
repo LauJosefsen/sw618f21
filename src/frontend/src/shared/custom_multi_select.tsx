@@ -1,5 +1,5 @@
 import React from "react";
-import Select, { CommonProps, components, GroupTypeBase, OptionTypeBase } from "react-select";
+import Select, { components } from "react-select";
 
 interface Props {
     options: { value: string; label: string }[];
