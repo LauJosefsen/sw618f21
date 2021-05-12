@@ -17,7 +17,18 @@ def get_tile(z, x, y):
     return response
 
 
-def map(x, in_min, in_max, out_min, out_max):
+def map(
+    x: float, in_min: float, in_max: float, out_min: float, out_max: float
+) -> float:
+    """
+    Maps a float from one interval to another
+    :param x: The value to map
+    :param in_min: The original value's interval minimum
+    :param in_max: The original value's interval maximum
+    :param out_min: The new interval minimum
+    :param out_max: The new interval maximum
+    :return: the mapped value in the new interval
+    """
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
