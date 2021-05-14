@@ -11,6 +11,7 @@ class DepthMapRepository:
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
+        # Use 3857 here instead of 25832, as this is used to draw tiles on leaflet directly.
         query = """
                 SELECT
                     ST_AsGeoJson(ST_SetSRID(grid.geom, 3857)) as geom,

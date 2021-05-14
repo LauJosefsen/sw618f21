@@ -3,7 +3,7 @@ CREATE MATERIALIZED VIEW public.simple_heatmap AS
         (
             SELECT
             ship_type,
-            ST_Transform(ST_SnapToGrid(ST_Transform(location, 3857), 10),4326) as grid_point
+            ST_Transform(ST_SnapToGrid(ST_Transform(location, 25832), 10),4326) as grid_point
             FROM points
             JOIN track AS t on points.track_id = t.id
             WHERE sog > 1
