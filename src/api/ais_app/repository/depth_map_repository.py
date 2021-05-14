@@ -14,14 +14,14 @@ class DepthMapRepository:
         # Use 3857 here instead of 25832, as this is used to draw tiles on leaflet directly.
         query = """
                 SELECT
-                    ST_AsGeoJson(ST_SetSRID(grid.geom, 3857)) as geom,
+                    ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
                     max_draught_map.min_depth as depth
                 FROM max_draught_map
                 JOIN grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
                 WHERE ST_Intersects(
-                    ST_SetSRID(ST_MakePolygon(ST_GeomFromText(
+                    ST_Transform(ST_SetSRID(ST_MakePolygon(ST_GeomFromText(
                         'LINESTRING(%s %s,%s %s,%s %s, %s %s, %s %s)'
-                        )), 4326),
+                        )), 3857),4326),
                     grid.geom
                 )
                 """

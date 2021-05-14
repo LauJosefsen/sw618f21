@@ -1,6 +1,7 @@
 from dependency_injector.wiring import inject, Provide
 from flask import Blueprint, send_file
 from PIL import Image, ImageDraw
+from tqdm import tqdm
 
 from ais_app.containers import Container
 from ais_app.services.depth_map_service import DepthMapService
@@ -42,7 +43,7 @@ def generate_depth_map(
     tiles = depth_map_service.get_map_tiles(min_zoom, max_zoom)
     max_depth = depth_map_service.get_max_depth()
 
-    for tile in tiles:
+    for tile in tqdm(tiles):
         coordinates = tile["geom"]["coordinates"][0]
         tile_n = max(coordinates, key=lambda x: x[1])[1]
         tile_s = min(coordinates, key=lambda x: x[1])[1]

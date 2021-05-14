@@ -56,7 +56,7 @@ BEGIN
 			FOR y IN 0..grid_size-1
 			LOOP
 				IF ST_Intersects(largest_enc.location, ST_Transform(ST_TileEnvelope(z,x,y), 4326)) THEN
-					INSERT INTO tile_grids VALUES (z,x,y,ST_Transform(ST_TileEnvelope(z,x,y),4326));
+					INSERT INTO tile_grids VALUES (z,x,y,ST_Transform(ST_TileEnvelope(z,x,y),3857));
 				END IF;
 			END LOOP;
 		END LOOP;
