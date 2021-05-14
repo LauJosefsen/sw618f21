@@ -2,6 +2,8 @@ from flask import Flask
 
 from .blueprints import data_management, enc_cells, heatmaps, tracks, depth_map
 from .containers import Container
+from simplejson import JSONEncoder
+
 
 container = Container()
 container.wire(modules=[data_management, enc_cells, heatmaps, tracks, depth_map])
@@ -13,6 +15,7 @@ app.register_blueprint(enc_cells.blueprint, url_prefix="/enc")
 app.register_blueprint(heatmaps.blueprint, url_prefix="/heatmaps")
 app.register_blueprint(tracks.blueprint, url_prefix="/tracks")
 app.register_blueprint(depth_map.blueprint, url_prefix="/depth_map")
+app.json_encoder = JSONEncoder
 
 
 @app.route("/")
