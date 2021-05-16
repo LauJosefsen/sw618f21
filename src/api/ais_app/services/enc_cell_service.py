@@ -30,3 +30,6 @@ class EncCellService:
 
     def get_largest(self):
         return self.__enc_cell_repository.get_largest()
+
+    def get_enc_bounds_in_utm32n_by_id(self, enc_cell_id):
+        return self.__enc_cell_repository.get_enc_cell_bounds_by_id_in_utm32n(enc_cell_id)

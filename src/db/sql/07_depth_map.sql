@@ -1,3 +1,23 @@
+CREATE TABLE IF NOT EXISTS public.max_draught_map
+(
+    i integer NOT NULL,
+    j integer NOT NULL,
+    min_depth double precision,
+    PRIMARY KEY (i, j)
+);
+
+
+CREATE TABLE IF NOT EXISTS public.interpolated_depth
+(
+    i integer NOT NULL,
+    j integer NOT NULL,
+    depth double precision,
+    varians double precision,
+    PRIMARY KEY (i, j),
+    FOREIGN KEY (i,j) REFERENCES grid(i,j)
+);
+
+
 CREATE OR REPLACE FUNCTION public.generate_depth_map(
 	)
     RETURNS boolean

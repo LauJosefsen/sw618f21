@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 
-from ais_app.helpers import build_dict
+from ais_app.helpers import build_dict, MinMaxXy
 from ais_app.repository.sql_connector import SqlConnector
 
 
@@ -119,3 +119,16 @@ class EncCellRepository:
         largest["location"] = json.loads(largest["location"])
 
         return largest
+
+    def get_enc_cell_bounds_by_id_in_utm32n(self, enc_id):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+        query = """
+        SELECT ST_AsGeoJson(enc_cell.utm32n_geom) as geom FROM enc_cell_with_utm32n enc_cell WHERE cell_id = %s
+        """
+        cursor.execute(query, (enc_id,))
+
+        enc_cell = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+        enc_cell_coordinates = json.loads(enc_cell['geom'])['coordinates'][0]
+
+        return MinMaxXy.from_coords(enc_cell_coordinates)
