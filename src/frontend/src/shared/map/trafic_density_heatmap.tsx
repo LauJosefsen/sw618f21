@@ -15,8 +15,12 @@ interface Props {
 }
 
 export const TraficDensityHeatMap = (props: Props) => {
-    const { isLoading: loading, error, data: data_heatmap } = useQuery(["trafic_density_heatmap", props.enc_cell_id, props.ship_types], () =>
-        fetch(`${config.api_url}/heatmaps/trafic_density?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
+    const {
+        isLoading: loading,
+        error,
+        data: data_heatmap,
+    } = useQuery(["trafic_density_heatmap", props.enc_cell_id, props.ship_types], () =>
+        fetch(`${config.api_url}/heatmaps/traffic_density?enc_cell_id=${props.enc_cell_id}&ship_types=${props.ship_types.toString()}`).then((res) => res.json())
     );
 
     const [heatMapLayer, setHeatMapLayer] = React.useState<any>();

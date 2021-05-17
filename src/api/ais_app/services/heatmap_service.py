@@ -6,11 +6,11 @@ class HeatmapService:
     __heatmap_repository = HeatmapRepository()
     __enc_cell_repository = EncCellRepository()
 
-    def simple_heatmap(self, enc_cell_id: int, ship_types: list[str] = None):
+    def point_density_heatmap(self, enc_cell_id: int, ship_types: list[str] = None):
         if ship_types is None:
             ship_types = []
 
-        points = self.__heatmap_repository.get_simple_heatmap_for_enc(
+        points = self.__heatmap_repository.get_point_density_heatmap_for_enc(
             enc_cell_id, ship_types
         )
 
@@ -43,5 +43,8 @@ class HeatmapService:
         ]
         return points_formatted
 
-    def generate_trafic_density(self):
+    def generate_traffic_density(self):
         self.__heatmap_repository.generate_trafic_density_heatmap()
+
+    def generate_point_density(self):
+        self.__heatmap_repository.generate_point_density_heatmap()
