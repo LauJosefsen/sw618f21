@@ -72,7 +72,6 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
-        cursor.execute("REFRESH MATERIALIZED VIEW simple_heatmap")
 
         connection.commit()
         connection.close()
@@ -305,32 +304,47 @@ class SpaceDataPreprocessingService:
                 .idxmax(skipna=False)
             )
 
-            most_common_row_with_none_instead_of_nan = [
+            mcr = [
                 None if type(x).__module__ == np.__name__ and np.isnan(x) else x
                 for x in most_common_row
             ]
 
             query = """
+            INSERT INTO ship (
+                mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            -- Setting name is done to make it return the existing rows id. 
+            -- As the only constraint is the uniqueness, this cannot risk changing anything.
+            ON CONFLICT(mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d) DO UPDATE SET name=EXCLUDED.name
+            RETURNING ID
+            """
+            cursor.execute(query, (mcr[3],mcr[4],mcr[5], mcr[6],mcr[7], mcr[8], mcr[9], mcr[10], mcr[12], mcr[13], mcr[14], mcr[15]))
+            ship_id = cursor.fetchall()[0]
+
+            query = """
                 INSERT INTO public.track (
+                    ship_id,
                     destination,
                     cargo_type,
                     eta,
-                    mmsi,
-                    imo,
-                    mobile_type,
-                    callsign,
-                    name,
-                    ship_type,
-                    width,
-                    length,
-                    draught,
-                    a,
-                    b,
-                    c,
-                    d
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                    draught
+                ) VALUES (%s, %s, %s, %s, %s) RETURNING id;
                 """
-            cursor.execute(query, most_common_row_with_none_instead_of_nan)
+            cursor.execute(query, (ship_id, mcr[0], mcr[1], mcr[2], mcr[11]))
             track_id = cursor.fetchall()[0]
 
             # insert points
