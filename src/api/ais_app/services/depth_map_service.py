@@ -1,6 +1,8 @@
+import configparser
+import os
+
 from PIL import Image, ImageDraw, ImageFont
 from pykrige import OrdinaryKriging
-from pyproj import Transformer
 from tqdm import tqdm
 import pylab as pl
 
@@ -11,6 +13,15 @@ import numpy as np
 
 class DepthMapService:
     __depth_map_repository = DepthMapRepository()
+
+    def __init__(self):
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+
+        self.raw_tiles_folder = config["depth_map"]["raw_tiles_folder"]
+        self.interpolated_tiles_folder = config["depth_map"][
+            "interpolated_tiles_folder"
+        ]
 
     def get_within_box(self, n, s, e, w):
         return self.__depth_map_repository.get_within_box(n, s, e, w)
@@ -59,14 +70,6 @@ class DepthMapService:
         """
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-    def render_interpolated(
-        self, bounds: MinMaxXy, grid_size, tiles, depths, varians, max_varians
-    ):
-        transformer = Transformer.from_crs(25832, 3857)
-
-        for tile in tiles:
-            tile_bounds = MinMaxXy.from_coords(tile["geom"]["coordinates"][0])
-
     def insert_interpolated_depth_map(
         self, bounds: MinMaxXy, grid_size, depths, varians
     ):
@@ -77,10 +80,69 @@ class DepthMapService:
             depths, varians, bounds, grid_size
         )
 
+    def render_raw_depth_map(self, min_zoom, max_zoom):
+        tiles = self.get_map_tiles(min_zoom, max_zoom)
+        max_depth = self.get_max_depth()
+
+        folder = os.path.join("ais_app", self.raw_tiles_folder)
+        self.clear_folder(folder)
+        self.render_legend(
+            max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
+        )
+
+        for tile in tqdm(tiles):
+            coordinates = tile["geom"]["coordinates"][0]
+            # todo make use minmaxxy
+            tile_n = max(coordinates, key=lambda x: x[1])[1]
+            tile_s = min(coordinates, key=lambda x: x[1])[1]
+            tile_e = max(coordinates, key=lambda x: x[0])[0]
+            tile_w = min(coordinates, key=lambda x: x[0])[0]
+
+            depths = self.get_within_box(tile_n, tile_s, tile_e, tile_w)
+
+            if len(depths) == 0:
+                continue
+
+            img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            for depth in depths:
+                coordinates = depth["geom"]["coordinates"][0]
+                grid_n = max(coordinates, key=lambda x: x[1])[1]
+                grid_s = min(coordinates, key=lambda x: x[1])[1]
+                grid_e = max(coordinates, key=lambda x: x[0])[0]
+                grid_w = min(coordinates, key=lambda x: x[0])[0]
+
+                # remove offset
+                # n-s is reversed, as increase in pixel, is moving down,
+                # while increase in latitude is moving up.
+                grid_g_n = self.map(grid_n, tile_s, tile_n, 255, 0)
+                grid_g_s = self.map(grid_s, tile_s, tile_n, 255, 0)
+                grid_g_e = self.map(grid_e, tile_w, tile_e, 0, 255)
+                grid_g_w = self.map(grid_w, tile_w, tile_e, 0, 255)
+
+                min_depth = depth["depth"]
+                min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
+                color = (min_depth_color, 0, 255 - min_depth_color)
+
+                draw.rectangle([(grid_g_w, grid_g_s), (grid_g_e, grid_g_n)], fill=color)
+
+                # debug
+                draw.text(
+                    (128, 128), f"{tile['z']}-{tile['x']}-{tile['y']}", fill=(0, 0, 0)
+                )
+
+            img.save(os.path.join(folder, f"{tile['z']}-{tile['x']}-{tile['y']}.png"))
+
     def render_interpolated_depth_map(self, min_zoom, max_zoom):
         tiles = self.get_map_tiles(min_zoom, max_zoom)
-        max_depth = self.get_max_depth()  # todo use this tables max
-        max_varians = 15  # todo figure this out
+        max_depth = self.get_max_depth_interpolated()
+
+        folder = os.path.join("ais_app", self.raw_tiles_folder)
+        self.clear_folder(folder)
+
+        self.render_legend(
+            max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
+        )
 
         for tile in tqdm(tiles):
             coordinates = tile["geom"]["coordinates"][0]
@@ -94,8 +156,6 @@ class DepthMapService:
             img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
             for depth in depths:
-                if depth["varians"] >= max_varians:
-                    continue
                 coordinates = depth["geom"]["coordinates"][0]
                 bounds_relative = MinMaxXy.from_coords(coordinates)
 
@@ -157,7 +217,7 @@ class DepthMapService:
                         font=font,
                     )
 
-            img.save(f"ais_app/tiles/{tile['z']}-{tile['x']}-{tile['y']}.png")
+            img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
 
         return "Server go brbrbr"
 
@@ -183,3 +243,18 @@ class DepthMapService:
         cax = pl.axes([0.02, 0.8, 0.96, 0.1])
         pl.colorbar(orientation="horizontal", cax=cax, label=description)
         pl.savefig(destination)
+
+    @staticmethod
+    def clear_folder(folder):
+        if not os.path.exists(folder):
+            os.makedirs("my_folder")
+        else:
+            for root, dirs, files in os.walk(folder):
+                for file in files:
+                    os.remove(os.path.join(root, file))
+
+    def generate_raw_depth_map(self):
+        self.__depth_map_repository.generate_raw_depth_map()
+
+    def get_max_depth_interpolated(self):
+        return self.__depth_map_repository.get_max_depth_interpolated()

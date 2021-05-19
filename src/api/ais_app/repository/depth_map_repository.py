@@ -62,6 +62,17 @@ class DepthMapRepository:
 
         return max[0]
 
+    def get_max_depth_interpolated(self):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+
+        query = "SELECT max(depth) as max FROM depth_map_interpolated"
+
+        cursor.execute(query)
+        max = cursor.fetchone()
+
+        return max[0]
+
     def get_min_depth_as_points_in_enc_in_utm32n(self, enc_id):
         conn = self.__sql_connector.get_db_connection()
         cursor = conn.cursor()
@@ -153,3 +164,10 @@ class DepthMapRepository:
             depth["geom"] = json.loads(depth["geom"])
 
         return depths
+
+    def generate_raw_depth_map(self):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM generate_depth_map()")
+        connection.commit()
+        connection.close()
