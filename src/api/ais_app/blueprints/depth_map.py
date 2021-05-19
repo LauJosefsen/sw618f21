@@ -19,6 +19,11 @@ def get_tile(z, x, y):
     return response
 
 
+@blueprint.route("/legend")
+def get_legend():
+    return send_file(f"tiles/legend.svg", mimetype="image/svg+xml")
+
+
 def map(
     x: float, in_min: float, in_max: float, out_min: float, out_max: float
 ) -> float:
@@ -31,7 +36,9 @@ def map(
     :param out_max: The new interval maximum
     :return: the mapped value in the new interval
     """
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min #todo remove from here
+    return (x - in_min) * (out_max - out_min) / (
+        in_max - in_min
+    ) + out_min  # todo remove from here
 
 
 @blueprint.route("/generate/<min_zoom>/<max_zoom>")
@@ -92,11 +99,13 @@ def generate_depth_map(
 @blueprint.route("/generate_interpolated")
 @inject
 def generate_depth_map_interpolated(
-        depth_map_service: DepthMapService = Provide[Container.depth_map_service],
-        enc_service: EncCellService = Provide[Container.enc_cell_service],
+    depth_map_service: DepthMapService = Provide[Container.depth_map_service],
+    enc_service: EncCellService = Provide[Container.enc_cell_service],
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=110, type=int)
-    grid_size = request.args.get("grid_size", default=1000, type=int)
+    grid_size = request.args.get(
+        "grid_size", default=1000, type=int
+    )  # todo hent fra db
     min_zoom = request.args.get("min_zoom", default=7, type=int)
     max_zoom = request.args.get("max_zoom", default=9, type=int)
 
@@ -110,5 +119,3 @@ def generate_depth_map_interpolated(
     depth_map_service.render_interpolated_depth_map(min_zoom, max_zoom)
 
     return "Ok"
-
-

@@ -97,15 +97,22 @@ class DepthMapRepository:
                 bounds.min_x + grid_size * ix,
                 bounds.min_y + grid_size * iy,
                 bounds.min_x + grid_size * (ix + 1),
-                bounds.min_y + grid_size * (iy + 1)
+                bounds.min_y + grid_size * (iy + 1),
             )
             query = """
                         INSERT INTO interpolated_depth
                         SELECT i, j, %s, %s FROM grid
                         WHERE ST_Contains(grid.geom, st_transform(ST_SetSrid(st_makepoint(%s, %s), 25832), 4326));
                     """
-            cursor.execute(query, (depths[iy][ix], varians[iy][ix], (abs_bounds.max_x + abs_bounds.min_x) / 2,
-                                   (abs_bounds.max_y + abs_bounds.min_y) / 2))
+            cursor.execute(
+                query,
+                (
+                    depths[iy][ix],
+                    varians[iy][ix],
+                    (abs_bounds.max_x + abs_bounds.min_x) / 2,
+                    (abs_bounds.max_y + abs_bounds.min_y) / 2,
+                ),
+            )
 
         conn.commit()
         conn.close()
@@ -131,7 +138,15 @@ class DepthMapRepository:
                         )
                         """
 
-        cursor.execute(query, (tile_bounds.min_x, tile_bounds.min_y, tile_bounds.max_x, tile_bounds.max_y))
+        cursor.execute(
+            query,
+            (
+                tile_bounds.min_x,
+                tile_bounds.min_y,
+                tile_bounds.max_x,
+                tile_bounds.max_y,
+            ),
+        )
         depths = [build_dict(cursor, row) for row in cursor.fetchall()]
 
         for depth in depths:

@@ -20,19 +20,20 @@ class SpaceDataPreprocessingService:
             self.failed_mmsi = result_queue
             self.task_queue = task_queue
 
-
         def run(self):
             conn = SqlConnector().get_db_connection()
             conn.set_session(autocommit=True)
+
+            sdps = SpaceDataPreprocessingService()
             proc_name = self.name
             while True:
                 next_task = self.task_queue.get()
                 if next_task is None:
-                    print('Tasks Complete')
+                    print("Tasks Complete")
                     self.task_queue.task_done()
                     break
 
-                answer = SpaceDataPreprocessingService().cluster_mmsi(next_task, conn)
+                answer = sdps.cluster_mmsi(next_task, conn)
                 self.task_queue.task_done()
                 # todo handle errors
                 self.failed_mmsi.put(answer)
@@ -72,7 +73,7 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        #self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
+        # self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()
@@ -105,7 +106,10 @@ class SpaceDataPreprocessingService:
 
         num_consumers = multiprocessing.cpu_count() * 2
 
-        consumers = [SpaceDataPreprocessingService.Consumer(tasks, results) for i in range(num_consumers)]
+        consumers = [
+            SpaceDataPreprocessingService.Consumer(tasks, results)
+            for i in range(num_consumers)
+        ]
 
         for w in consumers:
             w.start()
@@ -352,30 +356,80 @@ class SpaceDataPreprocessingService:
             ]
 
             query = """
-            INSERT INTO ship (
-                mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d
-            )
-            VALUES (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
-            -- Setting name is done to make it return the existing rows id. 
-            -- As the only constraint is the uniqueness, this cannot risk changing anything.
-            ON CONFLICT(mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d) DO UPDATE SET name=EXCLUDED.name
-            RETURNING ID
+                SELECT id FROM ship WHERE (
+                    mmsi IS NOT DISTINCT FROM %s
+                    AND
+                    imo IS NOT DISTINCT FROM %s
+                    AND
+                    mobile_type IS NOT DISTINCT FROM %s 
+                    AND
+                    callsign IS NOT DISTINCT FROM %s
+                    AND
+                    name IS NOT DISTINCT FROM %s
+                    AND
+                    ship_type IS NOT DISTINCT FROM %s
+                    AND
+                    width IS NOT DISTINCT FROM %s
+                    AND
+                    length IS NOT DISTINCT FROM %s
+                    AND
+                    a IS NOT DISTINCT FROM %s 
+                    AND
+                    b IS NOT DISTINCT FROM %s 
+                    AND
+                    c IS NOT DISTINCT FROM %s 
+                    AND
+                    d IS NOT DISTINCT FROM %s
+                )
             """
-            cursor.execute(query, (mcr[3],mcr[4],mcr[5], mcr[6],mcr[7], mcr[8], mcr[9], mcr[10], mcr[12], mcr[13], mcr[14], mcr[15]))
-            ship_id = cursor.fetchall()[0]
+            cursor.execute(
+                query,
+                (
+                    mcr[3],
+                    mcr[4],
+                    mcr[5],
+                    mcr[6],
+                    mcr[7],
+                    mcr[8],
+                    mcr[9],
+                    mcr[10],
+                    mcr[12],
+                    mcr[13],
+                    mcr[14],
+                    mcr[15],
+                ),
+            )
+            if cursor.rowcount > 0:
+                ship_id = cursor.fetchone()[0]
+            else:
+                query = """
+                INSERT INTO ship (
+                    mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                -- Setting name is done to make it return the existing rows id. 
+                -- As the only constraint is the uniqueness, this cannot risk changing anything.
+                ON CONFLICT(mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d) DO UPDATE SET name=EXCLUDED.name
+                RETURNING ID
+                """
+                cursor.execute(
+                    query,
+                    (
+                        mcr[3],
+                        mcr[4],
+                        mcr[5],
+                        mcr[6],
+                        mcr[7],
+                        mcr[8],
+                        mcr[9],
+                        mcr[10],
+                        mcr[12],
+                        mcr[13],
+                        mcr[14],
+                        mcr[15],
+                    ),
+                )
+                ship_id = cursor.fetchone()[0]
 
             query = """
                 INSERT INTO public.track (

@@ -129,6 +129,6 @@ class EncCellRepository:
         cursor.execute(query, (enc_id,))
 
         enc_cell = [build_dict(cursor, row) for row in cursor.fetchall()][0]
-        enc_cell_coordinates = json.loads(enc_cell['geom'])['coordinates'][0]
+        enc_cell_coordinates = json.loads(enc_cell["geom"])["coordinates"][0]
 
         return MinMaxXy.from_coords(enc_cell_coordinates)
