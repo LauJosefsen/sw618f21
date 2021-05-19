@@ -33,10 +33,11 @@ class DepthMapService:
         return self.__depth_map_repository.get_max_depth()
 
     def interpolate_depth_map_in_enc(
-        self, enc_id, enc_bounds: MinMaxXy, grid_size: int
+        self, enc_id, enc_bounds: MinMaxXy, grid_size: int, downscale: int
     ):
+
         depth_measurement_points = (
-            self.__depth_map_repository.get_min_depth_as_points_in_enc_in_utm32n(enc_id)
+            self.__depth_map_repository.get_min_depth_as_points_in_enc_in_utm32n(enc_id, downscale)
         )
 
         gridx = np.arange(enc_bounds.min_x, enc_bounds.max_x, grid_size)

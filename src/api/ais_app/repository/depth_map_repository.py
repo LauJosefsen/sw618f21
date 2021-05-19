@@ -73,9 +73,15 @@ class DepthMapRepository:
 
         return max[0]
 
-    def get_min_depth_as_points_in_enc_in_utm32n(self, enc_id):
+    def get_min_depth_as_points_in_enc_in_utm32n(self, enc_id, downscale):
         conn = self.__sql_connector.get_db_connection()
         cursor = conn.cursor()
+
+        if downscale > 1:
+            query = """
+                SELECT ST_Centroid(ST_Transform(geom, 25832)), depth
+                FROM get_downscaled_raw_depth_map(%s)
+            """
 
         query = """
                 with draught_map as (

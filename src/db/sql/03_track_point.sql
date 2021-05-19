@@ -59,7 +59,7 @@ CREATE MATERIALIZED VIEW public.track_with_geom
 AS
     SELECT
         t.*,
-        st_makeline(p.location ORDER BY p.timestamp) AS geom,
+        ST_Transform(ST_Simplify(ST_Transform(st_makeline(p.location ORDER BY p."timestamp"), 25832),5), 4326) AS geom,
         min(p.timestamp) as begin_ts,
         max(p.timestamp) as end_ts
     FROM track t

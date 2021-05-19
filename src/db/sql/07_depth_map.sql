@@ -104,21 +104,21 @@ BEGIN
 	TRUNCATE TABLE downscaled_raw_depth_map;
 
 	SELECT
-		min(i) as min_i,
-		max(i) as max_i,
-		min(j) as min_j,
-		max(j) as max_j
+		min(grid.i) as min_i,
+		max(grid.i) as max_i,
+		min(grid.j) as min_j,
+		max(grid.j) as max_j
 	INTO grid_bounds
 	FROM grid;
 
-	FOR i IN grid_bounds.min_i..grid_bounds.max_i by downscale_ratio
+	FOR i_loop IN grid_bounds.min_i..grid_bounds.max_i by downscale_ratio
 	LOOP
-		FOR j IN grid_bounds.min_j..grid_bounds.max_j by downscale_ratio
+		FOR j_loop IN grid_bounds.min_j..grid_bounds.max_j by downscale_ratio
 		LOOP
 			INSERT INTO downscaled_raw_depth_map
-			SELECT ST_Union(geom) as geom, max(min_depth)
-			FROM max_draught_map JOIN grid ON max_draught_map.i = grid.i AND max_draught_map.j = grid.j
-			WHERE grid.i >= i AND grid.i < i+downscale_ratio AND grid.j>= j AND grid.j <= j+downscale_ratio;
+			SELECT ST_Union(grid.geom), max(min_depth)
+			FROM max_draught_map RIGHT JOIN grid ON max_draught_map.i = grid.i AND max_draught_map.j = grid.j
+			WHERE grid.i >= i_loop AND grid.i < i_loop+downscale_ratio AND grid.j>= j_loop AND grid.j < j_loop+downscale_ratio HAVING max(min_depth) IS NOT null;
 		END LOOP;
 	END LOOP;
 
