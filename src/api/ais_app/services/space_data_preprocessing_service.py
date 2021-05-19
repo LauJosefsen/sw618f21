@@ -2,6 +2,7 @@ import configparser
 import multiprocessing
 import queue
 from datetime import datetime
+from multiprocessing.managers import SharedMemoryManager
 
 import numpy as np
 from pqdm.threads import pqdm
@@ -13,6 +14,30 @@ from ais_app.repository.sql_connector import SqlConnector
 
 
 class SpaceDataPreprocessingService:
+    class Consumer(multiprocessing.Process):
+        def __init__(self, task_queue, result_queue):
+            multiprocessing.Process.__init__(self)
+            self.failed_mmsi = result_queue
+            self.task_queue = task_queue
+
+
+        def run(self):
+            conn = SqlConnector().get_db_connection()
+            conn.set_session(autocommit=True)
+            proc_name = self.name
+            while True:
+                next_task = self.task_queue.get()
+                if next_task is None:
+                    print('Tasks Complete')
+                    self.task_queue.task_done()
+                    break
+
+                answer = SpaceDataPreprocessingService().cluster_mmsi(next_task, conn)
+                self.task_queue.task_done()
+                # todo handle errors
+                self.failed_mmsi.put(answer)
+            return
+
     sql_connector = SqlConnector()
 
     def __init__(self):
@@ -47,7 +72,7 @@ class SpaceDataPreprocessingService:
 
         print("[CLUSTER] Got mmsi distinct.")
 
-        self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
+        #self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()
@@ -56,11 +81,7 @@ class SpaceDataPreprocessingService:
         tcp = self.sql_connector.get_threading_pool()
         failed_mmsi_queue = queue.Queue()
 
-        pqdm(
-            mmsi_list,
-            lambda x: self.cluster_mmsi(x, tcp, failed_mmsi_queue),
-            n_jobs=multiprocessing.cpu_count(),
-        )
+        self.__cluster_mmsi_list(mmsi_list)
         # Uncomment this line and comment the line above to run as single thread.
         # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
 
@@ -75,6 +96,28 @@ class SpaceDataPreprocessingService:
 
         connection.commit()
         connection.close()
+
+    @staticmethod
+    def __cluster_mmsi_list(mmsi_list):
+        # inspired by https://stackoverflow.com/q/7555680/10562012
+        tasks = multiprocessing.JoinableQueue()
+        results = multiprocessing.Queue()
+
+        num_consumers = multiprocessing.cpu_count() * 2
+
+        consumers = [SpaceDataPreprocessingService.Consumer(tasks, results) for i in range(num_consumers)]
+
+        for w in consumers:
+            w.start()
+
+        for mmsi in mmsi_list:
+            tasks.put(mmsi)
+
+        for w in consumers:
+            w.join()
+
+        if not results.empty():
+            raise ValueError(f"{len(results)} mmsis failed processing.")
 
     @staticmethod
     def __before_invalid_coords_and_ship_types_and_intersection(cursor):
@@ -210,9 +253,8 @@ class SpaceDataPreprocessingService:
     def replace_nan_with_none_series(series):
         series.apply(SpaceDataPreprocessingService.replace_nan_with_none)
 
-    def cluster_mmsi(self, mmsi, tcp, failed_mmsi_queue):
+    def cluster_mmsi(self, mmsi, connection):
         try:
-            connection = tcp.getconn()
             cursor = connection.cursor()
 
             query = """
@@ -256,10 +298,10 @@ class SpaceDataPreprocessingService:
             self.__insert_tracks(tracks, cursor)
 
             connection.commit()
-            tcp.putconn(connection)
+            return True
         except BaseException as e:
             print(e)
-            failed_mmsi_queue.put(mmsi)
+            return False
 
     @staticmethod
     def __insert_tracks(tracks, cursor):
