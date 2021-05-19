@@ -37,7 +37,9 @@ class DepthMapService:
     ):
 
         depth_measurement_points = (
-            self.__depth_map_repository.get_min_depth_as_points_in_enc_in_utm32n(enc_id, downscale)
+            self.__depth_map_repository.get_min_depth_as_points_in_enc_in_utm32n(
+                enc_id, downscale
+            )
         )
 
         gridx = np.arange(enc_bounds.min_x, enc_bounds.max_x, grid_size)

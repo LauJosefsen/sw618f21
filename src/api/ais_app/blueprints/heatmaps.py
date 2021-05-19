@@ -15,7 +15,9 @@ def point_density_heatmap(
     enc_cell_id = request.args.get("enc_cell_id", default=0, type=int)
     ship_types = request.args.get("ship_types", default="", type=str).split(",")
 
-    return jsonify(heatmap_service.point_density_heatmap(enc_cell_id, ship_types=ship_types))
+    return jsonify(
+        heatmap_service.point_density_heatmap(enc_cell_id, ship_types=ship_types)
+    )
 
 
 @blueprint.route("/traffic_density")
@@ -36,6 +38,7 @@ def generate_traffic_density_heatmap(
 ):
     heatmap_service.generate_traffic_density()
     return "Ok"
+
 
 @blueprint.route("/generate_point_density")
 @inject

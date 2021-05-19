@@ -7,7 +7,9 @@ from ais_app.repository.sql_connector import SqlConnector
 class HeatmapRepository:
     __sql_connector = SqlConnector()
 
-    def get_point_density_heatmap_for_enc(self, enc_cell_id, ship_types: list[str] = None):
+    def get_point_density_heatmap_for_enc(
+        self, enc_cell_id, ship_types: list[str] = None
+    ):
         if ship_types is None:
             ship_types = []
 
@@ -79,11 +81,9 @@ class HeatmapRepository:
 
         connection.close()
 
-
     def generate_point_density_heatmap(self):
         connection = self.__sql_connector.get_db_connection()
 
         connection.cursor().execute("SELECT * FROM generate_point_density_heatmap();")
 
         connection.close()
-
