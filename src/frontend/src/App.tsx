@@ -54,6 +54,19 @@ function App() {
                         </SettingsContext.Consumer>
                     </MapContainer>
                 </header>
+                <SettingsContext.Consumer>
+                    {({ settings }) => (
+                        <>
+                            {settings.showDepthMap ? (
+                                <div className="legend">
+                                    <img src={`${config.api_url}/depth_map/legend`} />
+                                </div>
+                            ) : (
+                                ""
+                            )}
+                        </>
+                    )}
+                </SettingsContext.Consumer>
             </SettingsContext.Provider>
         </>
     );

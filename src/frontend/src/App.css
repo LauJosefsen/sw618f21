@@ -39,6 +39,15 @@ label {
     font-weight: bold;
 }
 
+div.legend {
+    position: absolute;
+    bottom: 0;
+    height: 10vh;
+    background-color: white;
+    width: 100%;
+    text-align: center;
+}
+
 a {
     color: #0078a8 !important;
     cursor: pointer !important;
