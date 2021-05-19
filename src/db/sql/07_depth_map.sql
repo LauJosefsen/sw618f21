@@ -85,3 +85,45 @@ BEGIN
 	return query SELECT * FROM tile_grids;
 END
 $BODY$;
+
+CREATE OR REPLACE FUNCTION public.get_downscaled_raw_depth_map(
+	downscale_ratio int
+)
+    RETURNS TABLE(geom geometry, depth double precision )
+    LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE i int;
+DECLARE j int;
+DECLARE y int;
+DECLARE grid_bounds record;
+
+BEGIN
+	CREATE TEMPORARY TABLE IF NOT EXISTS downscaled_raw_depth_map(
+		geom geometry, depth double precision
+	);
+	TRUNCATE TABLE downscaled_raw_depth_map;
+
+	SELECT
+		min(i) as min_i,
+		max(i) as max_i,
+		min(j) as min_j,
+		max(j) as max_j
+	INTO grid_bounds
+	FROM grid;
+
+	FOR i IN grid_bounds.min_i..grid_bounds.max_i by downscale_ratio
+	LOOP
+		FOR j IN grid_bounds.min_j..grid_bounds.max_j by downscale_ratio
+		LOOP
+			INSERT INTO downscaled_raw_depth_map
+			SELECT ST_Union(geom) as geom, max(min_depth)
+			FROM max_draught_map JOIN grid ON max_draught_map.i = grid.i AND max_draught_map.j = grid.j
+			WHERE grid.i >= i AND grid.i < i+downscale_ratio AND grid.j>= j AND grid.j <= j+downscale_ratio;
+		END LOOP;
+	END LOOP;
+
+
+
+	return query SELECT * FROM downscaled_raw_depth_map;
+END
+$BODY$;
