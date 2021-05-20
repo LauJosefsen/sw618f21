@@ -1,4 +1,5 @@
 import configparser
+import math
 import multiprocessing
 import queue
 from datetime import datetime
@@ -8,6 +9,7 @@ import numpy as np
 from pqdm.threads import pqdm
 import geopy.distance
 import pandas as pd
+from psycopg2.extras import execute_values
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
@@ -35,8 +37,8 @@ class SpaceDataPreprocessingService:
 
                 answer = sdps.cluster_mmsi(next_task, conn)
                 self.task_queue.task_done()
-                # todo handle errors
                 self.failed_mmsi.put(answer)
+                print(f"Task complete.")
             return
 
     sql_connector = SqlConnector()
@@ -61,7 +63,7 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         # Lets remove all the previous clustering.
-        cursor.execute("TRUNCATE track RESTART IDENTITY CASCADE")
+        cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
 
         print("[CLUSTER] Cleared previous cluster.")
 
@@ -71,24 +73,19 @@ class SpaceDataPreprocessingService:
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
+
         print("[CLUSTER] Got mmsi distinct.")
 
-        # self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
+        self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
 
         connection.commit()
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        tcp = self.sql_connector.get_threading_pool()
-        failed_mmsi_queue = queue.Queue()
 
+        # append none to signal end of queue.
+        mmsi_list.append(None)
         self.__cluster_mmsi_list(mmsi_list)
-        # Uncomment this line and comment the line above to run as single thread.
-        # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
-
-        tcp.tcp.closeall()
-
-        assert len(failed_mmsi_queue) == 0
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
@@ -247,16 +244,6 @@ class SpaceDataPreprocessingService:
         """
         cursor.execute(query_inserts)
 
-    @staticmethod
-    def replace_nan_with_none(str_in):
-        if str_in == "nan":
-            return None
-        return str_in
-
-    @staticmethod
-    def replace_nan_with_none_series(series):
-        series.apply(SpaceDataPreprocessingService.replace_nan_with_none)
-
     def cluster_mmsi(self, mmsi, connection):
         try:
             cursor = connection.cursor()
@@ -301,9 +288,55 @@ class SpaceDataPreprocessingService:
             # insert tracks and points:
             self.__insert_tracks(tracks, cursor)
 
+            cursor.execute("INSERT INTO processed_mmsi (mmsi) VALUES (%s)", (mmsi,))
+
             connection.commit()
             return True
         except BaseException as e:
+            mcr = []
+            for track in  tracks:
+
+                df = pd.DataFrame.from_dict(track)
+
+                def apply_datetime_if_not_none(str_in):
+                    try:
+                        d = datetime.strptime(str_in, "%d/%m/%Y %H:%M:%S")
+                    except ValueError:
+                        d = None
+                    return d
+
+                df["eta"] = df["eta"].astype(str).apply(apply_datetime_if_not_none)
+
+                most_common_row = (
+                    df.groupby(
+                        [
+                            "destination",
+                            "cargo_type",
+                            "eta",
+                            "mmsi",
+                            "imo",
+                            "mobile_type",
+                            "callsign",
+                            "name",
+                            "ship_type",
+                            "width",
+                            "length",
+                            "draught",
+                            "a",
+                            "b",
+                            "c",
+                            "d",
+                        ],
+                        dropna=False,
+                    )
+                        .size()
+                        .idxmax(skipna=False)
+                )
+
+                mcr.append([
+                    None if (type(x).__module__ == np.__name__ and np.isnan(x)) or (type(x) == float and math.isnan(x)) else x
+                    for x in most_common_row
+                ])
             print(e)
             return False
 
@@ -351,7 +384,8 @@ class SpaceDataPreprocessingService:
             )
 
             mcr = [
-                None if type(x).__module__ == np.__name__ and np.isnan(x) else x
+                None if (type(x).__module__ == np.__name__ and np.isnan(x)) or (
+                            type(x) == float and math.isnan(x)) else x
                 for x in most_common_row
             ]
 
@@ -444,14 +478,7 @@ class SpaceDataPreprocessingService:
             track_id = cursor.fetchall()[0]
 
             # insert points
-            for point in track:
-                query = """
-                                INSERT INTO public.points
-                                (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type)
-                                     VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)"""
-                cursor.execute(
-                    query,
-                    (
+            data = [(
                         track_id,
                         point["timestamp"],
                         point["longitude"],
@@ -461,8 +488,14 @@ class SpaceDataPreprocessingService:
                         point["cog"],
                         point["heading"],
                         point["position_fixing_device_type"],
-                    ),
-                )
+                    ) for point in track]
+            insert_query = 'insert into public.points (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type) values %s'
+            execute_values(
+                cursor, insert_query, data, template="(%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)", page_size=500
+            )
+
+
+
 
     def space_data_preprocessing(
         self,

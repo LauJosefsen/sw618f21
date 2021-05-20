@@ -17,7 +17,7 @@ class HeatmapRepository:
         cursor = connection.cursor()
         query = """
                     WITH heatmap_data AS (
-                        SELECT grid.geom, SUM(intensity) AS intensity
+                        SELECT grid.geom, intensity AS intensity
                         FROM heatmap_point_density as heatmap
                         JOIN grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
                         JOIN enc_cells as enc on st_contains(enc.location, grid.geom)
@@ -29,7 +29,7 @@ class HeatmapRepository:
                     )
                     SELECT
                         ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
-                        intensity * 100 as intensity
+                        (intensity * 100)/max(heatmap_data.intensity) as intensity
                     FROM heatmap_data
                     """
         cursor.execute(query, (enc_cell_id, ",".join(ship_types)))
@@ -60,7 +60,7 @@ class HeatmapRepository:
                 )
                 SELECT
                     ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
-                    intensity * 100 as intensity
+                    (intensity * 100)/max(heatmap_data.intensity) as intensity
                 FROM heatmap_data
             """
         cursor.execute(query, (enc_cell_id, ",".join(ship_types)))

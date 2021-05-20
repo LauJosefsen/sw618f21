@@ -1,7 +1,7 @@
 import os
 
 from dependency_injector.wiring import inject, Provide
-from flask import Blueprint, send_file, request
+from flask import Blueprint, send_file, request, jsonify
 from PIL import Image, ImageDraw
 from tqdm import tqdm
 
@@ -11,7 +11,13 @@ from ais_app.services.enc_cell_service import EncCellService
 
 blueprint = Blueprint("depth_map", __name__)
 
+"""
+@api {get} /depth_map/raw/tile/:z/:x/:y
+@apiGroup Depth map
+@apiDescription Gets a specified tile for raw depthmap.
 
+@apiSuccess {image/png} image The requested tile
+"""
 @blueprint.route("/raw/tile/<z>/<x>/<y>")
 @inject
 def get_tile(
@@ -29,7 +35,13 @@ def get_tile(
         response = send_file("blank.png", mimetype="image/png")
     return response
 
+"""
+@api {get} /depth_map/raw/legend
+@apiGroup Depth map
+@apiDescription Get the legend for the raw depthmap
 
+@apiSuccess {image/svg} image The color legend
+"""
 @blueprint.route("/raw/legend")
 @inject
 def get_legend(
@@ -39,7 +51,13 @@ def get_legend(
         f"{depth_map_service.raw_tiles_folder}/legend.svg", mimetype="image/svg+xml"
     )
 
+"""
+@api {get} /depth_map/interpolated/tile/:z/:x/:y
+@apiGroup Depth map
+@apiDescription Gets a specified tile for the interpolated depthmap.
 
+@apiSuccess {image/png} image The requested tile
+"""
 @blueprint.route("/interpolated/tile/<z>/<x>/<y>")
 @inject
 def get_tile_interpolated(
@@ -57,7 +75,13 @@ def get_tile_interpolated(
         response = send_file("blank.png", mimetype="image/png")
     return response
 
+"""
+@api {get} /depth_map/interpolated/legend
+@apiGroup Depth map
+@apiDescription Get the legend for the interpolated depthmap
 
+@apiSuccess {image/svg} image The color legend
+"""
 @blueprint.route("/interpolated/legend")
 @inject
 def get_legend_interpolated(
@@ -68,7 +92,17 @@ def get_legend_interpolated(
         mimetype="image/svg+xml",
     )
 
+"""
+@api {get} /depth_map/raw/generate
+@apiGroup Depth map
+@apiDescription Generates the raw depthmap and its tiles
 
+@apiParam {number} min_zoom The minimum zoom level to render tiles to
+@apiParam {number} max_zoom The maximum zoom level to render tiles to
+@apiParam {boolean} do_generate If set to false, skips the generation of depth map, and only renders tiles.
+
+@apiSuccess {bool} success True if succeeded
+"""
 @blueprint.route("/raw/generate")
 @inject
 def generate_depth_map(
@@ -83,9 +117,21 @@ def generate_depth_map(
 
     depth_map_service.render_raw_depth_map(min_zoom, max_zoom)
 
-    return "Server go brbrbr"
+    return jsonify({"success": True})
 
+"""
+@api {get} /depth_map/interpolated/generate
+@apiGroup Depth map
+@apiDescription Generates the raw depthmap and its tiles
 
+@apiParam {number} enc_cell_id The enc cell to render it for.
+@apiParam {number} min_zoom The minimum zoom level to render tiles to
+@apiParam {number} max_zoom The maximum zoom level to render tiles to
+@apiParam {number} downscale If set to more than 1, it will downscale the raw depth map by this factor in both x-y before interpolating.
+@apiParam {boolean} do_generate If set to false, skips the generation of depth map, and only renders tiles.
+
+@apiSuccess {bool} success True if succeeded
+"""
 @blueprint.route("/interpolated/generate")
 @inject
 def generate_depth_map_interpolated(
@@ -93,14 +139,12 @@ def generate_depth_map_interpolated(
     enc_service: EncCellService = Provide[Container.enc_cell_service],
 ):
     enc_cell_id = request.args.get("enc_cell_id", default=110, type=int)
-    grid_size = request.args.get(
-        "grid_size", default=1000, type=int
-    )  # todo hent fra db
     min_zoom = request.args.get("min_zoom", default=7, type=int)
-    max_zoom = request.args.get("max_zoom", default=9, type=int)
+    max_zoom = request.args.get("max_zoom", default=13, type=int)
     downscale = request.args.get("downscale", default=1, type=int)
-
     do_generate = request.args.get("do_generate", default=True, type=bool)
+
+    grid_size = depth_map_service.get_grid_size()
     if do_generate:
         enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)
         depths, varians = depth_map_service.interpolate_depth_map_in_enc(
@@ -112,4 +156,4 @@ def generate_depth_map_interpolated(
 
     depth_map_service.render_interpolated_depth_map(min_zoom, max_zoom)
 
-    return "Ok"
+    return jsonify({"success": True})

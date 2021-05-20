@@ -10,26 +10,35 @@ from ais_app.repository.sql_connector import SqlConnector
 class DepthMapRepository:
     __sql_connector = SqlConnector()
 
-    def get_within_box(self, n, s, e, w):
+    def get_within_box(self, bounds: MinMaxXy):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
         # Use 3857 here instead of 25832, as this is used to draw tiles on leaflet directly.
         query = """
-                SELECT
-                    ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
-                    max_draught_map.min_depth as depth
-                FROM max_draught_map
-                JOIN grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
-                WHERE ST_Intersects(
-                    ST_Transform(ST_SetSRID(ST_MakePolygon(ST_GeomFromText(
-                        'LINESTRING(%s %s,%s %s,%s %s, %s %s, %s %s)'
-                        )), 3857),4326),
-                    grid.geom
-                )
-                """
+                        SELECT
+                            ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
+                            max_draught_map.min_depth as depth
+                        FROM interpolated_depth
+                        JOIN grid ON grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
+                        WHERE ST_Intersects(
+                            ST_Transform(ST_SetSRID(ST_MakeBox2D(
+                                ST_Point(%s, %s),
+	                            ST_Point(%s ,%s)
+	                        ), 3857),4326),
+                            grid.geom
+                        )
+                        """
 
-        cursor.execute(query, (w, n, e, n, e, s, w, s, w, n))
+        cursor.execute(
+            query,
+            (
+                bounds.min_x,
+                bounds.min_y,
+                bounds.max_x,
+                bounds.max_y,
+            ),
+        )
         depths = [build_dict(cursor, row) for row in cursor.fetchall()]
 
         for depth in depths:
@@ -177,3 +186,12 @@ class DepthMapRepository:
         cursor.execute("SELECT * FROM generate_depth_map()")
         connection.commit()
         connection.close()
+
+    def get_grid_size(self):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM grid_size")
+        grid_size = cursor.fetchone()[0]
+        connection.commit()
+        connection.close()
+        return grid_size

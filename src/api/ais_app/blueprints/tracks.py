@@ -6,7 +6,16 @@ from ais_app.services.track_service import TrackService
 
 blueprint = Blueprint("tracks", __name__)
 
+"""
+@api {get} /tracks/get_by_enc_id
+@apiGroup Tracks
+@apiDescription Get tracks in a given enc_cell
 
+@apiParam {number} enc_id The enc to which to get the tracks for
+@apiParam {string[]} ship_types The ship types to show
+
+@apiSuccess {json} track_data The track data
+"""
 @blueprint.route("/get_by_enc_id")
 @inject
 def get_by_enc_id(

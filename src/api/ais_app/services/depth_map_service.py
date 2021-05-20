@@ -23,8 +23,8 @@ class DepthMapService:
             "interpolated_tiles_folder"
         ]
 
-    def get_within_box(self, n, s, e, w):
-        return self.__depth_map_repository.get_within_box(n, s, e, w)
+    def get_within_box(self, bounds: MinMaxXy):
+        return self.__depth_map_repository.get_within_box(bounds)
 
     def get_map_tiles(self, min_zoom: int, max_zoom: int):
         return self.__depth_map_repository.get_map_tiles(min_zoom, max_zoom)
@@ -95,13 +95,9 @@ class DepthMapService:
 
         for tile in tqdm(tiles):
             coordinates = tile["geom"]["coordinates"][0]
-            # todo make use minmaxxy
-            tile_n = max(coordinates, key=lambda x: x[1])[1]
-            tile_s = min(coordinates, key=lambda x: x[1])[1]
-            tile_e = max(coordinates, key=lambda x: x[0])[0]
-            tile_w = min(coordinates, key=lambda x: x[0])[0]
+            tile_bounds = MinMaxXy.from_coords(coordinates)
 
-            depths = self.get_within_box(tile_n, tile_s, tile_e, tile_w)
+            depths = self.get_within_box(tile_bounds)
 
             if len(depths) == 0:
                 continue
@@ -110,24 +106,27 @@ class DepthMapService:
             draw = ImageDraw.Draw(img)
             for depth in depths:
                 coordinates = depth["geom"]["coordinates"][0]
-                grid_n = max(coordinates, key=lambda x: x[1])[1]
-                grid_s = min(coordinates, key=lambda x: x[1])[1]
-                grid_e = max(coordinates, key=lambda x: x[0])[0]
-                grid_w = min(coordinates, key=lambda x: x[0])[0]
+                grid_bounds = MinMaxXy.from_coords(coordinates)
 
                 # remove offset
                 # n-s is reversed, as increase in pixel, is moving down,
                 # while increase in latitude is moving up.
-                grid_g_n = self.map(grid_n, tile_s, tile_n, 255, 0)
-                grid_g_s = self.map(grid_s, tile_s, tile_n, 255, 0)
-                grid_g_e = self.map(grid_e, tile_w, tile_e, 0, 255)
-                grid_g_w = self.map(grid_w, tile_w, tile_e, 0, 255)
+                grid_pixel_bounds = MinMaxXy(
+                    self.map(grid_bounds.min_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255),
+                    self.map(grid_bounds.min_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0),
+                    self.map(grid_bounds.max_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255),
+                    self.map(grid_bounds.max_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0)
+                )
+
+
+
+
 
                 min_depth = depth["depth"]
                 min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
                 color = (min_depth_color, 0, 255 - min_depth_color)
 
-                draw.rectangle([(grid_g_w, grid_g_s), (grid_g_e, grid_g_n)], fill=color)
+                draw.rectangle([(grid_bounds.min_x, grid_bounds.min_y), (grid_bounds.max_x, grid_bounds.max_y)], fill=color)
 
                 # debug
                 draw.text(
@@ -261,3 +260,6 @@ class DepthMapService:
 
     def get_max_depth_interpolated(self):
         return self.__depth_map_repository.get_max_depth_interpolated()
+
+    def get_grid_size(self):
+        return self.__depth_map_repository.get_grid_size()
