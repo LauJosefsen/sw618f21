@@ -13,6 +13,8 @@ blueprint = Blueprint("enc_cells", __name__)
 
 @apiSuccess {bool} success True if succeeded
 """
+
+
 @blueprint.route("/import")
 @inject
 def import_enc_data(
@@ -20,6 +22,7 @@ def import_enc_data(
 ):
     enc_cell_service.import_enc_cell_files()
     return "Ok"
+
 
 """
 @api {get} /enc_cells/get_by_area_bounds
@@ -31,6 +34,8 @@ def import_enc_data(
 
 @apiSuccess {json} enc_cells The found enc_cells
 """
+
+
 @blueprint.route("/get_by_area_bounds")
 @inject
 def get_by_size_bounds(

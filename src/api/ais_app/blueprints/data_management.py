@@ -16,6 +16,8 @@ blueprint = Blueprint("data_management", __name__)
 
 @apiSuccess {bool} success True if succeeded
 """
+
+
 @blueprint.route("/import")
 @inject
 def import_ais_data(
@@ -32,6 +34,8 @@ def import_ais_data(
 
 @apiSuccess {bool} success True if succeeded
 """
+
+
 @blueprint.route("/cluster")
 @inject
 def cluster_points(

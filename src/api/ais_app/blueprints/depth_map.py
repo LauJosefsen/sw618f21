@@ -18,6 +18,8 @@ blueprint = Blueprint("depth_map", __name__)
 
 @apiSuccess {image/png} image The requested tile
 """
+
+
 @blueprint.route("/raw/tile/<z>/<x>/<y>")
 @inject
 def get_tile(
@@ -35,6 +37,7 @@ def get_tile(
         response = send_file("blank.png", mimetype="image/png")
     return response
 
+
 """
 @api {get} /depth_map/raw/legend
 @apiGroup Depth map
@@ -42,6 +45,8 @@ def get_tile(
 
 @apiSuccess {image/svg} image The color legend
 """
+
+
 @blueprint.route("/raw/legend")
 @inject
 def get_legend(
@@ -51,6 +56,7 @@ def get_legend(
         f"{depth_map_service.raw_tiles_folder}/legend.svg", mimetype="image/svg+xml"
     )
 
+
 """
 @api {get} /depth_map/interpolated/tile/:z/:x/:y
 @apiGroup Depth map
@@ -58,6 +64,8 @@ def get_legend(
 
 @apiSuccess {image/png} image The requested tile
 """
+
+
 @blueprint.route("/interpolated/tile/<z>/<x>/<y>")
 @inject
 def get_tile_interpolated(
@@ -75,6 +83,7 @@ def get_tile_interpolated(
         response = send_file("blank.png", mimetype="image/png")
     return response
 
+
 """
 @api {get} /depth_map/interpolated/legend
 @apiGroup Depth map
@@ -82,6 +91,8 @@ def get_tile_interpolated(
 
 @apiSuccess {image/svg} image The color legend
 """
+
+
 @blueprint.route("/interpolated/legend")
 @inject
 def get_legend_interpolated(
@@ -91,6 +102,7 @@ def get_legend_interpolated(
         f"{depth_map_service.interpolated_tiles_folder}/legend.svg",
         mimetype="image/svg+xml",
     )
+
 
 """
 @api {get} /depth_map/raw/generate
@@ -103,6 +115,8 @@ def get_legend_interpolated(
 
 @apiSuccess {bool} success True if succeeded
 """
+
+
 @blueprint.route("/raw/generate")
 @inject
 def generate_depth_map(
@@ -119,6 +133,7 @@ def generate_depth_map(
 
     return jsonify({"success": True})
 
+
 """
 @api {get} /depth_map/interpolated/generate
 @apiGroup Depth map
@@ -132,6 +147,8 @@ def generate_depth_map(
 
 @apiSuccess {bool} success True if succeeded
 """
+
+
 @blueprint.route("/interpolated/generate")
 @inject
 def generate_depth_map_interpolated(

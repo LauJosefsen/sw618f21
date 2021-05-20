@@ -73,7 +73,6 @@ class SpaceDataPreprocessingService:
         cursor.execute(query)
         mmsi_list = cursor.fetchall()
 
-
         print("[CLUSTER] Got mmsi distinct.")
 
         self.__before_invalid_coords_and_ship_types_and_intersection(cursor)
@@ -294,7 +293,7 @@ class SpaceDataPreprocessingService:
             return True
         except BaseException as e:
             mcr = []
-            for track in  tracks:
+            for track in tracks:
 
                 df = pd.DataFrame.from_dict(track)
 
@@ -329,14 +328,19 @@ class SpaceDataPreprocessingService:
                         ],
                         dropna=False,
                     )
-                        .size()
-                        .idxmax(skipna=False)
+                    .size()
+                    .idxmax(skipna=False)
                 )
 
-                mcr.append([
-                    None if (type(x).__module__ == np.__name__ and np.isnan(x)) or (type(x) == float and math.isnan(x)) else x
-                    for x in most_common_row
-                ])
+                mcr.append(
+                    [
+                        None
+                        if (type(x).__module__ == np.__name__ and np.isnan(x))
+                        or (type(x) == float and math.isnan(x))
+                        else x
+                        for x in most_common_row
+                    ]
+                )
             print(e)
             return False
 
@@ -384,8 +388,10 @@ class SpaceDataPreprocessingService:
             )
 
             mcr = [
-                None if (type(x).__module__ == np.__name__ and np.isnan(x)) or (
-                            type(x) == float and math.isnan(x)) else x
+                None
+                if (type(x).__module__ == np.__name__ and np.isnan(x))
+                or (type(x) == float and math.isnan(x))
+                else x
                 for x in most_common_row
             ]
 
@@ -478,24 +484,28 @@ class SpaceDataPreprocessingService:
             track_id = cursor.fetchall()[0]
 
             # insert points
-            data = [(
-                        track_id,
-                        point["timestamp"],
-                        point["longitude"],
-                        point["latitude"],
-                        point["rot"],
-                        point["sog"],
-                        point["cog"],
-                        point["heading"],
-                        point["position_fixing_device_type"],
-                    ) for point in track]
-            insert_query = 'insert into public.points (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type) values %s'
+            data = [
+                (
+                    track_id,
+                    point["timestamp"],
+                    point["longitude"],
+                    point["latitude"],
+                    point["rot"],
+                    point["sog"],
+                    point["cog"],
+                    point["heading"],
+                    point["position_fixing_device_type"],
+                )
+                for point in track
+            ]
+            insert_query = "insert into public.points (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type) values %s"
             execute_values(
-                cursor, insert_query, data, template="(%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)", page_size=500
+                cursor,
+                insert_query,
+                data,
+                template="(%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)",
+                page_size=500,
             )
-
-
-
 
     def space_data_preprocessing(
         self,

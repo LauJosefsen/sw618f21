@@ -112,21 +112,31 @@ class DepthMapService:
                 # n-s is reversed, as increase in pixel, is moving down,
                 # while increase in latitude is moving up.
                 grid_pixel_bounds = MinMaxXy(
-                    self.map(grid_bounds.min_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255),
-                    self.map(grid_bounds.min_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0),
-                    self.map(grid_bounds.max_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255),
-                    self.map(grid_bounds.max_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0)
+                    self.map(
+                        grid_bounds.min_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255
+                    ),
+                    self.map(
+                        grid_bounds.min_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0
+                    ),
+                    self.map(
+                        grid_bounds.max_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255
+                    ),
+                    self.map(
+                        grid_bounds.max_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0
+                    ),
                 )
-
-
-
-
 
                 min_depth = depth["depth"]
                 min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
                 color = (min_depth_color, 0, 255 - min_depth_color)
 
-                draw.rectangle([(grid_bounds.min_x, grid_bounds.min_y), (grid_bounds.max_x, grid_bounds.max_y)], fill=color)
+                draw.rectangle(
+                    [
+                        (grid_bounds.min_x, grid_bounds.min_y),
+                        (grid_bounds.max_x, grid_bounds.max_y),
+                    ],
+                    fill=color,
+                )
 
                 # debug
                 draw.text(
