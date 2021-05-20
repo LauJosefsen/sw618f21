@@ -40,6 +40,7 @@ class DepthMapRepository:
             ),
         )
         depths = [build_dict(cursor, row) for row in cursor.fetchall()]
+        connection.close()
 
         for depth in depths:
             depth["geom"] = json.loads(depth["geom"])
@@ -54,6 +55,7 @@ class DepthMapRepository:
 
         cursor.execute(query, (min_zoom, max_zoom))
         tiles = [build_dict(cursor, row) for row in cursor.fetchall()]
+        connection.close()
 
         for tile in tiles:
             tile["geom"] = json.loads(tile["geom"])
@@ -68,6 +70,7 @@ class DepthMapRepository:
 
         cursor.execute(query)
         max = cursor.fetchone()
+        connection.close()
 
         return max[0]
 
@@ -79,6 +82,7 @@ class DepthMapRepository:
 
         cursor.execute(query)
         max = cursor.fetchone()
+        connection.close()
 
         return max[0]
 
@@ -103,7 +107,10 @@ class DepthMapRepository:
                 """
         cursor.execute(query, (enc_id,))
 
-        return [build_dict(cursor, row) for row in cursor.fetchall()]
+        points = [build_dict(cursor, row) for row in cursor.fetchall()]
+        conn.close()
+
+        return points
 
     def truncate_interpolated_depth_map(self):
         conn = self.__sql_connector.get_db_connection()
@@ -174,6 +181,8 @@ class DepthMapRepository:
             ),
         )
         depths = [build_dict(cursor, row) for row in cursor.fetchall()]
+
+        connection.close()
 
         for depth in depths:
             depth["geom"] = json.loads(depth["geom"])

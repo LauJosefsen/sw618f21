@@ -39,6 +39,7 @@ class SpaceDataPreprocessingService:
                 self.task_queue.task_done()
                 self.failed_mmsi.put(answer)
                 print(f"Task complete.")
+            conn.close()
             return
 
     sql_connector = SqlConnector()

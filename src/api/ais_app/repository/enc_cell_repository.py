@@ -53,6 +53,7 @@ class EncCellRepository:
             (search, search),
         )
         enc_cells = [build_dict(cursor, row) for row in cursor.fetchall()]
+        connection.close()
 
         for obj in enc_cells:
             obj["location"] = json.loads(obj["location"])
@@ -115,6 +116,7 @@ class EncCellRepository:
 
         cursor.execute(query)
         largest = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+        connection.close()
 
         largest["location"] = json.loads(largest["location"])
 
@@ -129,6 +131,7 @@ class EncCellRepository:
         cursor.execute(query, (enc_id,))
 
         enc_cell = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+        connection.close()
         enc_cell_coordinates = json.loads(enc_cell["geom"])["coordinates"][0]
 
         return MinMaxXy.from_coords(enc_cell_coordinates)
