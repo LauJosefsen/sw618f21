@@ -1,12 +1,9 @@
 import configparser
 import math
 import multiprocessing
-import queue
 from datetime import datetime
-from multiprocessing.managers import SharedMemoryManager
 
 import numpy as np
-from pqdm.threads import pqdm
 import geopy.distance
 import pandas as pd
 from psycopg2.extras import execute_values
@@ -27,7 +24,6 @@ class SpaceDataPreprocessingService:
             conn.set_session(autocommit=True)
 
             sdps = SpaceDataPreprocessingService()
-            proc_name = self.name
             while True:
                 next_task = self.task_queue.get()
                 if next_task is None:
@@ -35,10 +31,10 @@ class SpaceDataPreprocessingService:
                     self.task_queue.task_done()
                     break
 
-                answer = sdps.cluster_mmsi(next_task, conn)
+                success = sdps.cluster_mmsi(next_task, conn)
                 self.task_queue.task_done()
-                self.failed_mmsi.put(answer)
-                print(f"Task complete.")
+                if not success:
+                    self.failed_mmsi.put(next_task)
             conn.close()
             return
 
@@ -288,60 +284,9 @@ class SpaceDataPreprocessingService:
             # insert tracks and points:
             self.__insert_tracks(tracks, cursor)
 
-            cursor.execute("INSERT INTO processed_mmsi (mmsi) VALUES (%s)", (mmsi,))
-
             connection.commit()
             return True
         except BaseException as e:
-            mcr = []
-            for track in tracks:
-
-                df = pd.DataFrame.from_dict(track)
-
-                def apply_datetime_if_not_none(str_in):
-                    try:
-                        d = datetime.strptime(str_in, "%d/%m/%Y %H:%M:%S")
-                    except ValueError:
-                        d = None
-                    return d
-
-                df["eta"] = df["eta"].astype(str).apply(apply_datetime_if_not_none)
-
-                most_common_row = (
-                    df.groupby(
-                        [
-                            "destination",
-                            "cargo_type",
-                            "eta",
-                            "mmsi",
-                            "imo",
-                            "mobile_type",
-                            "callsign",
-                            "name",
-                            "ship_type",
-                            "width",
-                            "length",
-                            "draught",
-                            "a",
-                            "b",
-                            "c",
-                            "d",
-                        ],
-                        dropna=False,
-                    )
-                    .size()
-                    .idxmax(skipna=False)
-                )
-
-                mcr.append(
-                    [
-                        None
-                        if (type(x).__module__ == np.__name__ and np.isnan(x))
-                        or (type(x) == float and math.isnan(x))
-                        else x
-                        for x in most_common_row
-                    ]
-                )
             print(e)
             return False
 
@@ -402,7 +347,7 @@ class SpaceDataPreprocessingService:
                     AND
                     imo IS NOT DISTINCT FROM %s
                     AND
-                    mobile_type IS NOT DISTINCT FROM %s 
+                    mobile_type IS NOT DISTINCT FROM %s
                     AND
                     callsign IS NOT DISTINCT FROM %s
                     AND
@@ -414,11 +359,11 @@ class SpaceDataPreprocessingService:
                     AND
                     length IS NOT DISTINCT FROM %s
                     AND
-                    a IS NOT DISTINCT FROM %s 
+                    a IS NOT DISTINCT FROM %s
                     AND
-                    b IS NOT DISTINCT FROM %s 
+                    b IS NOT DISTINCT FROM %s
                     AND
-                    c IS NOT DISTINCT FROM %s 
+                    c IS NOT DISTINCT FROM %s
                     AND
                     d IS NOT DISTINCT FROM %s
                 )
@@ -448,9 +393,11 @@ class SpaceDataPreprocessingService:
                     mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d
                 )
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                -- Setting name is done to make it return the existing rows id. 
+                -- Setting name is done to make it return the existing rows id.
                 -- As the only constraint is the uniqueness, this cannot risk changing anything.
-                ON CONFLICT(mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d) DO UPDATE SET name=EXCLUDED.name
+                ON CONFLICT
+                    (mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d)
+                DO UPDATE SET name=EXCLUDED.name
                 RETURNING ID
                 """
                 cursor.execute(
@@ -499,7 +446,13 @@ class SpaceDataPreprocessingService:
                 )
                 for point in track
             ]
-            insert_query = "insert into public.points (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type) values %s"
+            insert_query = """
+                INSERT INTO public.points 
+                    (
+                        track_id, timestamp, location, rot,
+                        sog, cog, heading, position_fixing_device_type
+                    ) values %s
+                """
             execute_values(
                 cursor,
                 insert_query,

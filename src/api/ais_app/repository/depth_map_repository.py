@@ -24,8 +24,8 @@ class DepthMapRepository:
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
-	                            ST_Point(%s ,%s)
-	                        ), 3857),4326),
+                                ST_Point(%s ,%s)
+                            ), 3857),4326),
                             grid.geom
                         )
                         """
@@ -165,8 +165,8 @@ class DepthMapRepository:
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
-	                            ST_Point(%s ,%s)
-	                        ), 3857),4326),
+                                ST_Point(%s ,%s)
+                            ), 3857),4326),
                             grid.geom
                         )
                         """
