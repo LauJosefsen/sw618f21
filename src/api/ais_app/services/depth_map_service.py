@@ -10,6 +10,8 @@ from ais_app.helpers import MinMaxXy
 from ais_app.repository.depth_map_repository import DepthMapRepository
 import numpy as np
 
+from ais_app.services.grid_service import GridService
+
 
 class DepthMapService:
     __depth_map_repository = DepthMapRepository()
@@ -266,7 +268,7 @@ class DepthMapService:
                     os.remove(os.path.join(root, file))
 
     def generate_raw_depth_map(self):
-        self.__depth_map_repository.generate_raw_depth_map()
+        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate)
 
     def get_max_depth_interpolated(self):
         return self.__depth_map_repository.get_max_depth_interpolated()

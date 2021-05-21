@@ -8,6 +8,7 @@ from ais_app.repository.sql_connector import SqlConnector
 
 
 class DepthMapRepository:
+
     __sql_connector = SqlConnector()
 
     def get_within_box(self, bounds: MinMaxXy):
@@ -204,3 +205,18 @@ class DepthMapRepository:
         connection.commit()
         connection.close()
         return grid_size
+
+    @staticmethod
+    def apply_raw_generate(task, shared_info, conn):
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO max_draught_map
+            SELECT g.i, g.j, max(t.draught)
+            FROM grid g
+            JOIN track_with_geom t ON ST_Intersects(g.geom, t.geom) 
+            WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
+            GROUP BY g.i, g.j
+        """
+       , (task['i'],task['i'],task['j'],task['j'],)
+       )
