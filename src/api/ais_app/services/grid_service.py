@@ -50,6 +50,7 @@ class GridService:
                 if next_task is None:
                     print("Tasks Complete")
                     self.task_queue.task_done()
+                    self.task_queue.put(None)
                     break
 
                 result = self.function_to_apply(next_task, self.shared_info, conn)

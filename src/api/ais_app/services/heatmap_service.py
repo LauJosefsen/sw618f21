@@ -1,5 +1,6 @@
 from ais_app.repository.enc_cell_repository import EncCellRepository
 from ais_app.repository.heatmap_repository import HeatmapRepository
+from ais_app.services.grid_service import GridService
 
 
 class HeatmapService:
@@ -47,4 +48,6 @@ class HeatmapService:
         self.__heatmap_repository.generate_trafic_density_heatmap()
 
     def generate_point_density(self):
-        self.__heatmap_repository.generate_point_density_heatmap()
+        hours = self.__heatmap_repository.get_time_interval_in_hours()
+        self.__heatmap_repository.truncate_point_density()
+        GridService().apply_to_grid_intervals(100, HeatmapRepository.apply_point_density_generate, shared_info=hours)
