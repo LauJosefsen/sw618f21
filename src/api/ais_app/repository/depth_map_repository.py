@@ -20,9 +20,9 @@ class DepthMapRepository:
                         SELECT
                             ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
                             max_draught_map.min_depth as depth
-                        FROM interpolated_depth
-                        JOIN grid ON grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
-                        WHERE ST_Intersects(
+                        FROM max_draught_map
+                        JOIN grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
+                        WHERE min_depth is not null AND ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
                                 ST_Point(%s ,%s)
@@ -214,7 +214,8 @@ class DepthMapRepository:
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
             FROM grid g
-            JOIN track_with_geom t ON ST_Intersects(g.geom, t.geom) 
+            JOIN tracks_splitted_to_index ON tracks_splitted_to_index.geom && g.geom
+            JOIN track t ON t.id = tracks_splitted_to_index.track_id 
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
             GROUP BY g.i, g.j
         """

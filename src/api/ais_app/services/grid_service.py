@@ -1,3 +1,4 @@
+import json
 import multiprocessing
 import os
 
@@ -10,12 +11,12 @@ from ais_app.services.space_data_preprocessing_service import SpaceDataPreproces
 class GridService:
     __grid_repository = GridRepository()
 
-    def apply_to_grid_intervals(self, group_size, function_to_apply, num_consumers=multiprocessing.cpu_count() * 2):
+    def apply_to_grid_intervals(self, group_size, function_to_apply, num_consumers=multiprocessing.cpu_count(), shared_info = None):
         tasks = multiprocessing.JoinableQueue()
         results = multiprocessing.Queue()
 
         consumers = [
-            SpaceDataPreprocessingService.Consumer(tasks, results)
+            GridService.Consumer(tasks, results, function_to_apply, shared_info)
             for i in range(num_consumers)
         ]
 
@@ -24,6 +25,7 @@ class GridService:
 
         for task in self.__grid_repository.get_intervals(group_size):
             tasks.put(task)
+        tasks.put(None)
 
         for w in consumers:
             w.join()
@@ -31,7 +33,7 @@ class GridService:
         return results
 
 
-class Consumer(multiprocessing.Process):
+    class Consumer(multiprocessing.Process):
         def __init__(self, task_queue, result_queue, function_to_apply, shared_info=None):
             multiprocessing.Process.__init__(self)
             self.results = result_queue
@@ -52,6 +54,7 @@ class Consumer(multiprocessing.Process):
 
                 result = self.function_to_apply(next_task, self.shared_info, conn)
                 self.task_queue.task_done()
+                print(f"Done with task {json.dumps(next_task)}")
                 self.results.put(result)
             conn.close()
             return

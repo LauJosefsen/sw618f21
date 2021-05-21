@@ -129,7 +129,7 @@ def generate_depth_map(
     if do_generate:
         depth_map_service.generate_raw_depth_map()
 
-    # depth_map_service.render_raw_depth_map(min_zoom, max_zoom)
+    depth_map_service.render_raw_depth_map(min_zoom, max_zoom)
 
     return jsonify({"success": True})
 

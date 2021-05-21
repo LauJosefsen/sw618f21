@@ -134,8 +134,8 @@ class DepthMapService:
 
                 draw.rectangle(
                     [
-                        (grid_bounds.min_x, grid_bounds.min_y),
-                        (grid_bounds.max_x, grid_bounds.max_y),
+                        (grid_pixel_bounds.min_x, grid_pixel_bounds.min_y),
+                        (grid_pixel_bounds.max_x, grid_pixel_bounds.max_y),
                     ],
                     fill=color,
                 )
@@ -261,14 +261,14 @@ class DepthMapService:
     @staticmethod
     def clear_folder(folder):
         if not os.path.exists(folder):
-            os.makedirs("my_folder")
+            os.makedirs(folder)
         else:
             for root, dirs, files in os.walk(folder):
                 for file in files:
                     os.remove(os.path.join(root, file))
 
     def generate_raw_depth_map(self):
-        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate)
+        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate, num_consumers=12)
 
     def get_max_depth_interpolated(self):
         return self.__depth_map_repository.get_max_depth_interpolated()
