@@ -268,7 +268,8 @@ class DepthMapService:
                     os.remove(os.path.join(root, file))
 
     def generate_raw_depth_map(self):
-        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate, num_consumers=12)
+        self.__depth_map_repository.truncate_raw_depth_map()
+        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate, num_consumers=12,grid_name="grid_1k")
 
     def get_max_depth_interpolated(self):
         return self.__depth_map_repository.get_max_depth_interpolated()

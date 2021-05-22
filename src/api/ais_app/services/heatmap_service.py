@@ -45,7 +45,11 @@ class HeatmapService:
         return points_formatted
 
     def generate_traffic_density(self):
-        self.__heatmap_repository.generate_trafic_density_heatmap()
+        hours = self.__heatmap_repository.get_time_interval_in_hours()
+        self.__heatmap_repository.truncate_trafic_density()
+        GridService().apply_to_grid_intervals(10, HeatmapRepository.apply_trafic_density_generate,
+                                              shared_info=hours, grid_name="grid_2k")
+
 
     def generate_point_density(self):
         hours = self.__heatmap_repository.get_time_interval_in_hours()

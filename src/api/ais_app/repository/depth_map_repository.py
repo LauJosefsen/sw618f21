@@ -213,11 +213,19 @@ class DepthMapRepository:
         cursor.execute("""
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
-            FROM grid g
-            JOIN tracks_splitted_to_index ON tracks_splitted_to_index.geom && g.geom
-            JOIN track t ON t.id = tracks_splitted_to_index.track_id 
+            FROM grid_1k g
+            JOIN track_with_geom t ON ST_Intersects(t.geom, g.geom)
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
             GROUP BY g.i, g.j
         """
        , (task['i'],task['i'],task['j'],task['j'],)
        )
+
+    def truncate_raw_depth_map(self):
+        conn = self.__sql_connector.get_db_connection()
+        cursor = conn.cursor()
+
+        query = """TRUNCATE TABLE max_draught_map;"""
+        cursor.execute(query)
+        conn.commit()
+        conn.close()

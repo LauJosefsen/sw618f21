@@ -8,12 +8,12 @@ from ais_app.repository.sql_connector import SqlConnector
 class GridRepository:
     __sql_connector = SqlConnector()
 
-    def get_intervals(self, group_size):
+    def get_intervals(self, grid_name, group_size):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
-        query = """
-        with min_max AS (SELECT min(i) as min_i, min(j) as min_j, max(i) as max_i, max(j) as max_j FROM grid)
+        query = f"""
+        with min_max AS (SELECT min(i) as min_i, min(j) as min_j, max(i) as max_i, max(j) as max_j FROM {grid_name})
         SELECT
             *
             FROM 
