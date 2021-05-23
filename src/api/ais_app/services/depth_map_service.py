@@ -152,13 +152,12 @@ class DepthMapService:
         tiles = self.get_map_tiles(min_zoom, max_zoom)
         max_depth = self.get_max_depth_interpolated()
 
-        folder = os.path.join("ais_app", self.raw_tiles_folder)
+        folder = os.path.join("ais_app", self.interpolated_tiles_folder)
         self.clear_folder(folder)
 
         self.render_legend(
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
         )
-
         for tile in tqdm(tiles):
             coordinates = tile["geom"]["coordinates"][0]
             tile_bounds = MinMaxXy.from_coords(coordinates)

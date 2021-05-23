@@ -128,6 +128,7 @@ class DepthMapRepository:
 
     def insert_interpolated_depths(self, depths, varians, bounds, grid_size):
         conn = self.__sql_connector.get_db_connection()
+        conn.set_session(autocommit=True)
         cursor = conn.cursor()
 
         for iy, ix in tqdm(np.ndindex(depths.shape)):
@@ -139,7 +140,7 @@ class DepthMapRepository:
             )
             query = """
                         INSERT INTO interpolated_depth
-                        SELECT i, j, %s, %s FROM grid
+                        SELECT i, j, %s, %s FROM grid_1k
                         WHERE ST_Contains(grid.geom, st_transform(ST_SetSrid(st_makepoint(%s, %s), 25832), 4326));
                     """
             cursor.execute(
@@ -166,7 +167,8 @@ class DepthMapRepository:
                             depth,
                             varians
                         FROM interpolated_depth
-                        JOIN grid_1k grid ON grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
+                        JOIN grid_1k grid ON 
+                            grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
