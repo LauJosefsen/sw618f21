@@ -155,13 +155,13 @@ def generate_depth_map_interpolated(
     depth_map_service: DepthMapService = Provide[Container.depth_map_service],
     enc_service: EncCellService = Provide[Container.enc_cell_service],
 ):
-    enc_cell_id = request.args.get("enc_cell_id", default=110, type=int)
+    enc_cell_id = request.args.get("enc_cell_id", default=140, type=int)
     min_zoom = request.args.get("min_zoom", default=7, type=int)
     max_zoom = request.args.get("max_zoom", default=13, type=int)
     downscale = request.args.get("downscale", default=1, type=int)
     do_generate = request.args.get("do_generate", default=True, type=bool)
 
-    grid_size = depth_map_service.get_grid_size()
+    grid_size = 1000 #todo make automatic
     if do_generate:
         enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)
         depths, varians = depth_map_service.interpolate_depth_map_in_enc(

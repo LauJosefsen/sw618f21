@@ -93,20 +93,24 @@ class DepthMapRepository:
 
         if downscale > 1:
             query = """
-                SELECT ST_Centroid(ST_Transform(geom, 25832)), depth
-                FROM get_downscaled_raw_depth_map(%s)
-            """
-
-        query = """
                 with draught_map as (
-                SELECT min_depth, st_centroid(st_transform(g.geom, 25832)) as geom FROM max_draught_map
-                JOIN grid g on max_draught_map.i = g.i and max_draught_map.j = g.j
-                JOIN enc_cell_with_utm32n enc_cell ON st_intersects(enc_cell.utm32n_geom, st_transform(g.geom, 25832))
-                WHERE enc_cell.cell_id = %s
+                SELECT ST_Centroid(ST_Transform(geom, 25832)) geom, depth min_depth
+                FROM get_downscaled_raw_depth_map(%s)
                 )
                 SELECT ST_X(geom) as x, ST_y(geom) as y, min_depth as z FROM draught_map
-                """
-        cursor.execute(query, (enc_id,))
+            """
+            cursor.execute(query, (downscale,))
+        else:
+            query = """
+                    with draught_map as (
+                    SELECT min_depth, st_centroid(st_transform(g.geom, 25832)) as geom FROM max_draught_map
+                    JOIN grid_1k g on max_draught_map.i = g.i and max_draught_map.j = g.j
+                    JOIN enc_cell_with_utm32n enc_cell ON st_intersects(enc_cell.utm32n_geom, st_transform(g.geom, 25832))
+                    WHERE enc_cell.cell_id = %s
+                    )
+                    SELECT ST_X(geom) as x, ST_y(geom) as y, min_depth as z FROM draught_map
+                    """
+            cursor.execute(query, (enc_id,))
 
         points = [build_dict(cursor, row) for row in cursor.fetchall()]
         conn.close()

@@ -57,6 +57,7 @@ class DepthMapService:
             z,
             variogram_model="spherical",
             enable_plotting=False,
+            verbose=True
         )
 
         return OK.execute("grid", gridx, gridy, n_closest_points=10, backend="loop")
