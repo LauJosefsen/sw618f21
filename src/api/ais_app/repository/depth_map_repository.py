@@ -140,7 +140,7 @@ class DepthMapRepository:
             )
             query = """
                         INSERT INTO interpolated_depth
-                        SELECT i, j, %s, %s FROM grid_1k
+                        SELECT i, j, %s, %s FROM grid_1k grid
                         WHERE ST_Contains(grid.geom, st_transform(ST_SetSrid(st_makepoint(%s, %s), 25832), 4326));
                     """
             cursor.execute(
