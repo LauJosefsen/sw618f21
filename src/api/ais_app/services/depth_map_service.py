@@ -1,7 +1,7 @@
 import configparser
 import os
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from pykrige import OrdinaryKriging
 from tqdm import tqdm
 import pylab as pl
@@ -141,11 +141,6 @@ class DepthMapService:
                     fill=color,
                 )
 
-                # debug
-                draw.text(
-                    (128, 128), f"{tile['z']}-{tile['x']}-{tile['y']}", fill=(0, 0, 0)
-                )
-
             img.save(os.path.join(folder, f"{tile['z']}-{tile['x']}-{tile['y']}.png"))
 
     def render_interpolated_depth_map(self, min_zoom, max_zoom):
@@ -215,21 +210,6 @@ class DepthMapService:
                     ],
                     fill=color,
                 )
-
-                font = ImageFont.truetype(
-                    "arial.ttf",
-                    int((bounds_in_image.max_x - bounds_in_image.min_x) / 2),
-                )
-                if tile["z"] >= 11:
-                    draw.text(
-                        (
-                            (bounds_in_image.max_x + bounds_in_image.min_x) / 2,
-                            (bounds_in_image.max_y + bounds_in_image.min_y) / 2,
-                        ),
-                        text=f"{round(depth['depth'],1)}\n{round(depth['varians'],1)}",
-                        fill="white",
-                        font=font,
-                    )
 
             img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
 

@@ -159,7 +159,7 @@ def generate_depth_map_interpolated(
     min_zoom = request.args.get("min_zoom", default=7, type=int)
     max_zoom = request.args.get("max_zoom", default=13, type=int)
     downscale = request.args.get("downscale", default=1, type=int)
-    do_generate = request.args.get("do_generate", default=True, type=bool)
+    do_generate = request.args.get("do_generate", default=False, type=bool)
 
     grid_size = 1000 #todo make automatic
     if do_generate:
