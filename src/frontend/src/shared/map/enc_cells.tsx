@@ -95,7 +95,7 @@ export const MapEncCells = (props: Props) => {
                                                             setSettings({ ...settings, encIdForSimpleHeatMap: enc.cell_id, showEnc: false });
                                                         }}
                                                     >
-                                                        Simple heatmap
+                                                        Fishing desnity heatmap
                                                     </Button>
                                                 </Col>
                                                 <Col md={6}>
