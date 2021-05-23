@@ -90,7 +90,7 @@ class DepthMapService:
         tiles = self.get_map_tiles(min_zoom, max_zoom)
         max_depth = self.get_max_depth()
 
-        folder = os.path.join("ais_app", self.raw_tiles_folder)
+        folder = self.raw_tiles_folder
         self.clear_folder(folder)
         self.render_legend(
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
@@ -147,7 +147,7 @@ class DepthMapService:
         tiles = self.get_map_tiles(min_zoom, max_zoom)
         max_depth = self.get_max_depth_interpolated()
 
-        folder = os.path.join("ais_app", self.interpolated_tiles_folder)
+        folder = self.interpolated_tiles_folder
         self.clear_folder(folder)
 
         self.render_legend(
