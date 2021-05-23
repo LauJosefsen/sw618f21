@@ -131,7 +131,7 @@ class DepthMapService:
 
                 min_depth = depth["depth"]
                 min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
-                color = (min_depth_color, 0, 255 - min_depth_color)
+                color = (min_depth_color, 0, 255 - min_depth_color, 100)
 
                 draw.rectangle(
                     [

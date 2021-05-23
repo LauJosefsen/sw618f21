@@ -21,7 +21,7 @@ class DepthMapRepository:
                             ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
                             max_draught_map.min_depth as depth
                         FROM max_draught_map
-                        JOIN grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
+                        JOIN grid_1k grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
                         WHERE min_depth is not null AND ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
@@ -79,7 +79,7 @@ class DepthMapRepository:
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
-        query = "SELECT max(depth) as max FROM depth_map_interpolated"
+        query = "SELECT max(depth) as max FROM interpolated_depth"
 
         cursor.execute(query)
         max = cursor.fetchone()
@@ -166,7 +166,7 @@ class DepthMapRepository:
                             depth,
                             varians
                         FROM interpolated_depth
-                        JOIN grid ON grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
+                        JOIN grid_1k grid ON grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
@@ -218,7 +218,7 @@ class DepthMapRepository:
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
             FROM grid_1k g
-            JOIN track_with_geom t ON ST_Intersects(t.geom, g.geom)
+            JOIN track_subdivided_with_geom_and_draught t ON ST_Intersects(t.geom, g.geom)
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
             GROUP BY g.i, g.j
         """
