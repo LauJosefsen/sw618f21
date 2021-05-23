@@ -162,14 +162,14 @@ def generate_depth_map_interpolated(
     do_generate = request.args.get("do_generate", default=True, type=bool)
 
     grid_size = 1000 #todo make automatic
-    # if do_generate:
-    #     enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)
-    #     depths, varians = depth_map_service.interpolate_depth_map_in_enc(
-    #         enc_cell_id, enc_bounds, grid_size, downscale
-    #     )
-    #     depth_map_service.insert_interpolated_depth_map(
-    #         enc_bounds, grid_size, depths, varians
-    #     )
+    if do_generate:
+        enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)
+        depths, varians = depth_map_service.interpolate_depth_map_in_enc(
+            enc_cell_id, enc_bounds, grid_size, downscale
+        )
+        depth_map_service.insert_interpolated_depth_map(
+            enc_bounds, grid_size, depths, varians
+        )
 
     depth_map_service.render_interpolated_depth_map(min_zoom, max_zoom)
 
