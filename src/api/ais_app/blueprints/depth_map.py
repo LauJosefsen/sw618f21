@@ -76,7 +76,7 @@ def get_tile_interpolated(
 ):
     try:
         response = send_file(
-            f"${depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png",
+            f"$ais_app/{depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png",
             mimetype="image/png",
         )
     except FileNotFoundError:
