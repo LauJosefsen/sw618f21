@@ -60,7 +60,7 @@ class DepthMapService:
             verbose=True
         )
 
-        return OK.execute("grid", gridx, gridy, n_closest_points=10, backend="loop")
+        return OK.execute("grid", gridx, gridy, n_closest_points=100, backend="loop")
 
     def map(
         self, x: float, in_min: float, in_max: float, out_min: float, out_max: float
