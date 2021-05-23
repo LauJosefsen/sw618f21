@@ -74,6 +74,7 @@ def get_tile_interpolated(
     y,
     depth_map_service: DepthMapService = Provide[Container.depth_map_service],
 ):
+    print(os.getcwd())
     try:
         response = send_file(
             f"$ais_app/{depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png",
