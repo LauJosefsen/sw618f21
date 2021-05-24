@@ -171,6 +171,8 @@ class DepthMapService:
         img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         for depth in depths:
+            if depth['varians'] > 6:
+                continue
             coordinates = depth["geom"]["coordinates"][0]
             bounds_relative = MinMaxXy.from_coords(coordinates)
 
@@ -207,7 +209,7 @@ class DepthMapService:
 
             min_depth = depth["depth"]
             min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 100))
-            color = (min_depth_color, 0, 255 - min_depth_color, 100)
+            color = (min_depth_color, 0, 255 - min_depth_color, 255)
 
             draw.rectangle(
                 [
