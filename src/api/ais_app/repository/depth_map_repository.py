@@ -95,11 +95,11 @@ class DepthMapRepository:
             query = """
                 with draught_map as (
                 SELECT ST_Centroid(ST_Transform(geom, 25832)) geom, depth min_depth
-                FROM get_downscaled_raw_depth_map(%s)
+                FROM get_downscaled_raw_depth_map(%s, %s)
                 )
                 SELECT ST_X(geom) as x, ST_y(geom) as y, min_depth as z FROM draught_map
             """
-            cursor.execute(query, (downscale,))
+            cursor.execute(query, (downscale, enc_id))
         else:
             query = """
                     with draught_map as (
@@ -216,16 +216,22 @@ class DepthMapRepository:
     def apply_raw_generate(task, shared_info, conn):
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
             FROM grid_1k g
             JOIN track_subdivided_with_geom_and_draught t ON ST_Intersects(t.geom, g.geom)
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
             GROUP BY g.i, g.j
-        """
-       , (task['i'],task['i'],task['j'],task['j'],)
-       )
+        """,
+            (
+                task["i"],
+                task["i"],
+                task["j"],
+                task["j"],
+            ),
+        )
 
     def truncate_raw_depth_map(self):
         conn = self.__sql_connector.get_db_connection()

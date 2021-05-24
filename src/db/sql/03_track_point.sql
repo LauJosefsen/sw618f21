@@ -70,3 +70,65 @@ CREATE INDEX track_with_geom_index
   ON track_with_geom
   USING GIST (geom);
 
+CREATE MATERIALIZED VIEW public.track_subdivided_with_geom_and_draught
+TABLESPACE pg_default
+AS
+ SELECT split_tracks_by_vertice_count.track_id,
+    split_tracks_by_vertice_count.draught,
+    split_tracks_by_vertice_count.geom
+   FROM split_tracks_by_vertice_count(1000::bigint) split_tracks_by_vertice_count(track_id, draught, geom);
+
+CREATE INDEX track_subdivided_with_geom_and_draught_geom_index
+    ON public.track_subdivided_with_geom_and_draught USING gist
+    (geom);
+
+
+CREATE OR REPLACE FUNCTION public.split_tracks_by_vertice_count(
+	vertice_count bigint)
+    RETURNS TABLE(track_id bigint, draught double precision, geom geometry)
+    LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE npoints double precision;
+DECLARE splits double precision;
+DECLARE x double precision;
+DECLARE track record;
+
+BEGIN
+	DROP TABLE IF EXISTS tracks_splitted;
+	CREATE UNLOGGED TABLE tracks_splitted(
+		track_id bigint,
+		draught double precision,
+		geom geometry
+	);
+
+	FOR track in SELECT t.id, t.draught, t.geom FROM track_with_geom t
+	LOOP
+
+		SELECT ST_NPoints(track.geom) INTO npoints;
+
+		IF npoints = 0 THEN
+			splits = 1;
+		ELSE
+			SELECT 1/(npoints/vertice_count) INTO splits;
+		END IF;
+
+		x=0;
+		IF splits < 1 THEN
+			WHILE x < 1
+			LOOP
+
+				INSERT INTO tracks_splitted SELECT track.id, track.draught, ST_LineSubstring(track.geom, x, LEAST(x+splits,1));
+				x = x+splits;
+
+			END LOOP;
+
+		ELSE
+			INSERT INTO tracks_splitted SELECT track.id, track.draught, track.geom;
+		END IF;
+	END LOOP;
+
+
+ 	return query SELECT t.track_id, t.draught, t.geom FROM tracks_splitted t;
+END
+$BODY$;
+

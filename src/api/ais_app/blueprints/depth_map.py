@@ -74,7 +74,12 @@ def get_tile_interpolated(
     y,
     depth_map_service: DepthMapService = Provide[Container.depth_map_service],
 ):
-    print(os.path.join(os.getcwd(), f"{depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png"))
+    print(
+        os.path.join(
+            os.getcwd(),
+            f"{depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png",
+        )
+    )
     try:
         response = send_file(
             f"{depth_map_service.interpolated_tiles_folder}/{z}-{x}-{y}.png",
@@ -162,7 +167,7 @@ def generate_depth_map_interpolated(
     downscale = request.args.get("downscale", default=1, type=int)
     do_generate = request.args.get("do_generate", default=0, type=bool)
 
-    grid_size = 500 #todo make automatic
+    grid_size = 500  # todo make automatic
 
     if do_generate == 1:
         enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)

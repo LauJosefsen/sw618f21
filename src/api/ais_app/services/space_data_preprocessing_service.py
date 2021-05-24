@@ -87,6 +87,9 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
+        cursor.execute(
+            "REFRESH MATERIALIZED VIEW track_subdivided_with_geom_and_draught"
+        )
 
         connection.commit()
         connection.close()
@@ -97,7 +100,7 @@ class SpaceDataPreprocessingService:
         tasks = multiprocessing.JoinableQueue()
         results = multiprocessing.Queue()
 
-        num_consumers = multiprocessing.cpu_count() * 2
+        num_consumers = multiprocessing.cpu_count()
 
         consumers = [
             SpaceDataPreprocessingService.Consumer(tasks, results)
@@ -109,6 +112,9 @@ class SpaceDataPreprocessingService:
 
         for mmsi in mmsi_list:
             tasks.put(mmsi)
+
+        for w in consumers:
+            tasks.put(None)
 
         for w in consumers:
             w.join()
@@ -574,7 +580,7 @@ class SpaceDataPreprocessingService:
 
         if a["sog"] is None:
             if b["sog"] is None:
-                return 0 if actual_speed < 50 else 2 * self.threshold_space
+                return 0 if actual_speed <= 50 else 2 * self.threshold_space
             else:
                 return 2 * self.threshold_space
 

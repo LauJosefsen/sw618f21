@@ -76,14 +76,15 @@ class HeatmapRepository:
 
         return points
 
-
     def get_time_interval_in_hours(self):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT EXTRACT(epoch FROM max(timestamp)-min(timestamp))/3600 as interval FROM points
-        """)
+        """
+        )
 
         hours = cursor.fetchone()[0]
 
@@ -125,14 +126,7 @@ class HeatmapRepository:
                     COUNT(p) FILTER (WHERE s.mobile_type = 'Class A')
                 )/(ST_Area(g.geom, true) * %s) IS NOT null
         """,
-            (
-                shared_info,
-                task["i"],
-                task["i"],
-                task["j"],
-                task["j"],
-                shared_info
-            ),
+            (shared_info, task["i"], task["i"], task["j"], task["j"], shared_info),
         )
 
     @staticmethod
@@ -154,14 +148,7 @@ class HeatmapRepository:
             HAVING SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
                 /(ST_Area(g.geom, true) * %s) != 0
         """,
-            (
-                shared_info,
-                task["i"],
-                task["i"],
-                task["j"],
-                task["j"],
-                shared_info
-            ),
+            (shared_info, task["i"], task["i"], task["j"], task["j"], shared_info),
         )
 
     def truncate_trafic_density(self):
