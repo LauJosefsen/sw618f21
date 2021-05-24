@@ -5,13 +5,22 @@ import os
 from ais_app.repository.enc_cell_repository import EncCellRepository
 from ais_app.repository.grid_repository import GridRepository
 from ais_app.repository.sql_connector import SqlConnector
-from ais_app.services.space_data_preprocessing_service import SpaceDataPreprocessingService
+from ais_app.services.space_data_preprocessing_service import (
+    SpaceDataPreprocessingService,
+)
 
 
 class GridService:
     __grid_repository = GridRepository()
 
-    def apply_to_grid_intervals(self, group_size, function_to_apply, num_consumers=multiprocessing.cpu_count(), shared_info = None, grid_name = "grid"):
+    def apply_to_grid_intervals(
+        self,
+        group_size,
+        function_to_apply,
+        num_consumers=multiprocessing.cpu_count(),
+        shared_info=None,
+        grid_name="grid",
+    ):
         tasks = multiprocessing.JoinableQueue()
         results = multiprocessing.Queue()
 
@@ -34,14 +43,15 @@ class GridService:
         num_jobs = len(grid_groups)
         while num_jobs:
             result = results.get()
-            print(f'Result: {result}, {num_jobs} left')
+            print(f"Result: {result}, {num_jobs} left")
             num_jobs -= 1
 
         return results
 
-
     class Consumer(multiprocessing.Process):
-        def __init__(self, task_queue, result_queue, function_to_apply, shared_info=None):
+        def __init__(
+            self, task_queue, result_queue, function_to_apply, shared_info=None
+        ):
             multiprocessing.Process.__init__(self)
             self.results = result_queue
             self.task_queue = task_queue
@@ -64,4 +74,3 @@ class GridService:
                 self.results.put(result)
             conn.close()
             return
-

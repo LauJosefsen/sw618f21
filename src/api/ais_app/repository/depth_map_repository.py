@@ -156,7 +156,7 @@ class DepthMapRepository:
         conn.commit()
         conn.close()
 
-    def get_within_box_interpolated(self, tile_bounds):
+    def get_within_box_interpolated(self, tile_bounds, max_varians):
         connection = self.__sql_connector.get_db_connection()
         cursor = connection.cursor()
 
@@ -175,7 +175,7 @@ class DepthMapRepository:
                                 ST_Point(%s ,%s)
                             ), 3857),4326),
                             grid.geom
-                        )
+                        ) AND varians < %s
                         """
 
         cursor.execute(
@@ -185,6 +185,7 @@ class DepthMapRepository:
                 tile_bounds.min_y,
                 tile_bounds.max_x,
                 tile_bounds.max_y,
+                max_varians,
             ),
         )
         depths = [build_dict(cursor, row) for row in cursor.fetchall()]
@@ -216,16 +217,22 @@ class DepthMapRepository:
     def apply_raw_generate(task, shared_info, conn):
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
             FROM grid_1k g
             JOIN track_subdivided_with_geom_and_draught t ON ST_Intersects(t.geom, g.geom)
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
             GROUP BY g.i, g.j
-        """
-       , (task['i'],task['i'],task['j'],task['j'],)
-       )
+        """,
+            (
+                task["i"],
+                task["i"],
+                task["j"],
+                task["j"],
+            ),
+        )
 
     def truncate_raw_depth_map(self):
         conn = self.__sql_connector.get_db_connection()

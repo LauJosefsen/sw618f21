@@ -54,12 +54,7 @@ class DepthMapService:
         z = [depth["z"] for depth in depth_measurement_points]
 
         OK = OrdinaryKriging(
-            x,
-            y,
-            z,
-            variogram_model="spherical",
-            enable_plotting=False,
-            verbose=True
+            x, y, z, variogram_model="spherical", enable_plotting=False, verbose=True
         )
 
         return OK.execute("grid", gridx, gridy, n_closest_points=100, backend="loop")
@@ -163,7 +158,8 @@ class DepthMapService:
         coordinates = tile["geom"]["coordinates"][0]
         tile_bounds = MinMaxXy.from_coords(coordinates)
 
-        depths = self.get_within_box_interpolated(tile_bounds)
+        max_varians = 11.2  # todo make dynamic
+        depths = self.get_within_box_interpolated(tile_bounds, max_varians)
 
         if len(depths) == 0:
             return
@@ -171,8 +167,6 @@ class DepthMapService:
         img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         for depth in depths:
-            if depth['varians'] > 6:
-                continue
             coordinates = depth["geom"]["coordinates"][0]
             bounds_relative = MinMaxXy.from_coords(coordinates)
 
@@ -221,8 +215,10 @@ class DepthMapService:
 
         img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
 
-    def get_within_box_interpolated(self, tile_bounds):
-        return self.__depth_map_repository.get_within_box_interpolated(tile_bounds)
+    def get_within_box_interpolated(self, tile_bounds, max_varians):
+        return self.__depth_map_repository.get_within_box_interpolated(
+            tile_bounds, max_varians
+        )
 
     def render_legend(self, max: float, destination: str, description: str, min=0):
         # make custom cmap
@@ -255,7 +251,12 @@ class DepthMapService:
 
     def generate_raw_depth_map(self):
         self.__depth_map_repository.truncate_raw_depth_map()
-        GridService().apply_to_grid_intervals(10, DepthMapRepository.apply_raw_generate, num_consumers=12,grid_name="grid_1k")
+        GridService().apply_to_grid_intervals(
+            10,
+            DepthMapRepository.apply_raw_generate,
+            num_consumers=12,
+            grid_name="grid_1k",
+        )
 
     def get_max_depth_interpolated(self):
         return self.__depth_map_repository.get_max_depth_interpolated()

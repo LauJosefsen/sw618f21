@@ -46,6 +46,7 @@ div.legend {
     background-color: white;
     width: 100%;
     text-align: center;
+    overflow: hidden;
 }
 
 a {
