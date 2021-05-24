@@ -158,7 +158,7 @@ class DepthMapService:
         coordinates = tile["geom"]["coordinates"][0]
         tile_bounds = MinMaxXy.from_coords(coordinates)
 
-        max_varians = 11.2  # todo make dynamic
+        max_varians = self.__depth_map_repository.get_max_varians_using_histogram()
         depths = self.get_within_box_interpolated(tile_bounds, max_varians)
 
         if len(depths) == 0:

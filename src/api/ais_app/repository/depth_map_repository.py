@@ -242,3 +242,35 @@ class DepthMapRepository:
         cursor.execute(query)
         conn.commit()
         conn.close()
+
+
+    def get_max_varians_using_histogram(self):
+        conn = self.__sql_connector.get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                max(buckets) AS max_varians
+            FROM 
+            (
+                SELECT
+                       buckets,
+                       count,
+                       SUM(count) OVER (ORDER BY buckets) AS running_total
+                FROM 
+                (
+                    SELECT 
+                        (width_bucket(varians, 0, 30, 3000)/100.0) AS buckets,
+                        count(*) AS count
+                    FROM interpolated_depth
+                    GROUP BY buckets
+                    ORDER BY buckets
+                ) b
+            ) b_with_running_total
+            WHERE running_total <= (SELECT count(*)/2.4 from interpolated_depth)
+        """)
+        max_varians = cursor.fetchone()[0]
+
+        conn.close()
+
+        return max_varians
