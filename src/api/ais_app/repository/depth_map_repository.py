@@ -95,11 +95,11 @@ class DepthMapRepository:
             query = """
                 with draught_map as (
                 SELECT ST_Centroid(ST_Transform(geom, 25832)) geom, depth min_depth
-                FROM get_downscaled_raw_depth_map(%s)
+                FROM get_downscaled_raw_depth_map(%s, %s)
                 )
                 SELECT ST_X(geom) as x, ST_y(geom) as y, min_depth as z FROM draught_map
             """
-            cursor.execute(query, (downscale,))
+            cursor.execute(query, (downscale, enc_id))
         else:
             query = """
                     with draught_map as (
