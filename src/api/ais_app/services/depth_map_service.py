@@ -155,9 +155,11 @@ class DepthMapService:
         self.render_legend(
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
         )
-        pqdm((tiles, max_depth, folder), self.render_tile, n_jobs=multiprocessing.cpu_count())
+        tasks = [(tile, max_depth, folder) for tile in tiles]
+        pqdm(tasks, self.render_tile, n_jobs=multiprocessing.cpu_count())
 
-    def render_tile(self, tile, max_depth, folder):
+    def render_tile(self, param):
+        tile, max_depth, folder = param
         coordinates = tile["geom"]["coordinates"][0]
         tile_bounds = MinMaxXy.from_coords(coordinates)
 

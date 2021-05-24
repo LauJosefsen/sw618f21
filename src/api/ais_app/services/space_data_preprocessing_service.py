@@ -574,7 +574,7 @@ class SpaceDataPreprocessingService:
 
         if a["sog"] is None:
             if b["sog"] is None:
-                return 0
+                return 0 if actual_speed < 50 else 2 * self.threshold_space
             else:
                 return 2 * self.threshold_space
 
