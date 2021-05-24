@@ -112,7 +112,7 @@ def get_legend_interpolated(
 
 @apiParam {number} min_zoom The minimum zoom level to render tiles to
 @apiParam {number} max_zoom The maximum zoom level to render tiles to
-@apiParam {boolean} do_generate If set to false, skips the generation of depth map, and only renders tiles.
+@apiParam {number} do_generate If set to 1, then does generation
 
 @apiSuccess {bool} success True if succeeded
 """
@@ -126,9 +126,9 @@ def generate_depth_map(
     min_zoom = request.args.get("min_zoom", default=7, type=int)
     max_zoom = request.args.get("max_zoom", default=9, type=int)
 
-    do_generate = request.args.get("do_generate", default=True, type=bool)
-    # if do_generate: todo
-    #     depth_map_service.generate_raw_depth_map()
+    do_generate = request.args.get("do_generate", default=0, type=bool)
+    if do_generate == 1:
+        depth_map_service.generate_raw_depth_map()
 
     depth_map_service.render_raw_depth_map(min_zoom, max_zoom)
 
@@ -144,7 +144,7 @@ def generate_depth_map(
 @apiParam {number} min_zoom The minimum zoom level to render tiles to
 @apiParam {number} max_zoom The maximum zoom level to render tiles to
 @apiParam {number} downscale If set to more than 1, it will downscale the raw depth map by this factor in both x-y before interpolating.
-@apiParam {boolean} do_generate If set to false, skips the generation of depth map, and only renders tiles.
+@apiParam {number} do_generate If set to 1, then does generation
 
 @apiSuccess {bool} success True if succeeded
 """
@@ -160,10 +160,11 @@ def generate_depth_map_interpolated(
     min_zoom = request.args.get("min_zoom", default=7, type=int)
     max_zoom = request.args.get("max_zoom", default=13, type=int)
     downscale = request.args.get("downscale", default=1, type=int)
-    do_generate = request.args.get("do_generate", default=False, type=bool)
+    do_generate = request.args.get("do_generate", default=0, type=bool)
 
-    grid_size = 1000 #todo make automatic
-    if do_generate:
+    grid_size = 500 #todo make automatic
+
+    if do_generate == 1:
         enc_bounds = enc_service.get_enc_bounds_in_utm32n_by_id(enc_cell_id)
         depths, varians = depth_map_service.interpolate_depth_map_in_enc(
             enc_cell_id, enc_bounds, grid_size, downscale

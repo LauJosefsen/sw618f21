@@ -1,7 +1,9 @@
 import configparser
+import multiprocessing
 import os
 
 from PIL import Image, ImageDraw
+from pqdm.threads import pqdm
 from pykrige import OrdinaryKriging
 from tqdm import tqdm
 import pylab as pl
@@ -153,67 +155,67 @@ class DepthMapService:
         self.render_legend(
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
         )
-        for tile in tqdm(tiles):
-            coordinates = tile["geom"]["coordinates"][0]
-            tile_bounds = MinMaxXy.from_coords(coordinates)
+        pqdm((tiles, max_depth, folder), self.render_tile, n_jobs=multiprocessing.cpu_count())
 
-            depths = self.get_within_box_interpolated(tile_bounds)
+    def render_tile(self, tile, max_depth, folder):
+        coordinates = tile["geom"]["coordinates"][0]
+        tile_bounds = MinMaxXy.from_coords(coordinates)
 
-            if len(depths) == 0:
-                continue
+        depths = self.get_within_box_interpolated(tile_bounds)
 
-            img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            for depth in depths:
-                coordinates = depth["geom"]["coordinates"][0]
-                bounds_relative = MinMaxXy.from_coords(coordinates)
+        if len(depths) == 0:
+            return
 
-                bounds_in_image = MinMaxXy(
-                    self.map(
-                        bounds_relative.min_x,
-                        tile_bounds.min_x,
-                        tile_bounds.max_x,
-                        0,
-                        255,
-                    ),
-                    self.map(
-                        bounds_relative.min_y,
-                        tile_bounds.min_y,
-                        tile_bounds.max_y,
-                        255,
-                        0,
-                    ),
-                    self.map(
-                        bounds_relative.max_x,
-                        tile_bounds.min_x,
-                        tile_bounds.max_x,
-                        0,
-                        255,
-                    ),
-                    self.map(
-                        bounds_relative.max_y,
-                        tile_bounds.min_y,
-                        tile_bounds.max_y,
-                        255,
-                        0,
-                    ),
-                )
+        img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        for depth in depths:
+            coordinates = depth["geom"]["coordinates"][0]
+            bounds_relative = MinMaxXy.from_coords(coordinates)
 
-                min_depth = depth["depth"]
-                min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
-                color = (min_depth_color, 0, 255 - min_depth_color)
+            bounds_in_image = MinMaxXy(
+                self.map(
+                    bounds_relative.min_x,
+                    tile_bounds.min_x,
+                    tile_bounds.max_x,
+                    0,
+                    255,
+                ),
+                self.map(
+                    bounds_relative.min_y,
+                    tile_bounds.min_y,
+                    tile_bounds.max_y,
+                    255,
+                    0,
+                ),
+                self.map(
+                    bounds_relative.max_x,
+                    tile_bounds.min_x,
+                    tile_bounds.max_x,
+                    0,
+                    255,
+                ),
+                self.map(
+                    bounds_relative.max_y,
+                    tile_bounds.min_y,
+                    tile_bounds.max_y,
+                    255,
+                    0,
+                ),
+            )
 
-                draw.rectangle(
-                    [
-                        (bounds_in_image.min_x, bounds_in_image.min_y),
-                        (bounds_in_image.max_x, bounds_in_image.max_y),
-                    ],
-                    fill=color,
-                )
+            min_depth = depth["depth"]
+            min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 100))
+            color = (min_depth_color, 0, 255 - min_depth_color, 100)
 
-            img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
+            draw.rectangle(
+                [
+                    (bounds_in_image.min_x, bounds_in_image.min_y),
+                    (bounds_in_image.max_x, bounds_in_image.max_y),
+                ],
+                fill=color,
+            )
 
-        return "Server go brbrbr"
+        img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
 
     def get_within_box_interpolated(self, tile_bounds):
         return self.__depth_map_repository.get_within_box_interpolated(tile_bounds)
