@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 
-from ais_app.helpers import build_dict
+from ais_app.helpers import build_dict, MinMaxXy
 from ais_app.repository.sql_connector import SqlConnector
 
 
@@ -41,7 +41,7 @@ class EncCellRepository:
                             SELECT
                             *,
                             ST_AsGeoJson(ST_FlipCoordinates(public.enc_cells.location)) AS location,
-                            ROUND(CAST(ST_Area(ST_Transform(location, 3857))/1000000 AS NUMERIC), 2) AS area
+                            ROUND(CAST(ST_Area(location,true)/1000000 AS NUMERIC), 2) AS area
                             FROM enc_cells
                             WHERE cell_title LIKE %s OR cell_name LIKE %s
                         ) as enc
@@ -53,6 +53,7 @@ class EncCellRepository:
             (search, search),
         )
         enc_cells = [build_dict(cursor, row) for row in cursor.fetchall()]
+        connection.close()
 
         for obj in enc_cells:
             obj["location"] = json.loads(obj["location"])
@@ -115,7 +116,22 @@ class EncCellRepository:
 
         cursor.execute(query)
         largest = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+        connection.close()
 
         largest["location"] = json.loads(largest["location"])
 
         return largest
+
+    def get_enc_cell_bounds_by_id_in_utm32n(self, enc_id):
+        connection = self.__sql_connector.get_db_connection()
+        cursor = connection.cursor()
+        query = """
+        SELECT ST_AsGeoJson(enc_cell.utm32n_geom) as geom FROM enc_cell_with_utm32n enc_cell WHERE cell_id = %s
+        """
+        cursor.execute(query, (enc_id,))
+
+        enc_cell = [build_dict(cursor, row) for row in cursor.fetchall()][0]
+        connection.close()
+        enc_cell_coordinates = json.loads(enc_cell["geom"])["coordinates"][0]
+
+        return MinMaxXy.from_coords(enc_cell_coordinates)

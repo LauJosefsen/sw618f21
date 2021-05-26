@@ -18,6 +18,7 @@ export interface settings {
 
     // DepthMap
     showDepthMap: boolean;
+    showInterpolatedDepthMap: boolean;
 }
 
 export interface settings_with_setter {
@@ -37,5 +38,6 @@ export const SettingsContext = React.createContext<settings_with_setter>({
         encIdForTraficDensityHeatMap: undefined,
         shipTypesSelected: [],
         showDepthMap: false,
+        showInterpolatedDepthMap: false,
     },
 });

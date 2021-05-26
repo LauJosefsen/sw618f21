@@ -21,7 +21,8 @@ function App() {
         encIdForTrack: undefined,
         encIdForSimpleHeatMap: undefined,
         encIdForTraficDensityHeatMap: undefined,
-        showDepthMap: true,
+        showDepthMap: false,
+        showInterpolatedDepthMap: false,
     });
 
     return (
@@ -35,7 +36,8 @@ function App() {
                         <SettingsContext.Consumer>
                             {({ settings }) => (
                                 <>
-                                    {settings.showDepthMap ? <TileLayer url={`${config.api_url}/depth_map/tile/{z}/{x}/{y}`} /> : ""}
+                                    {settings.showDepthMap ? <TileLayer url={`${config.api_url}/depth_map/raw/tile/{z}/{x}/{y}`} /> : ""}
+                                    {settings.showInterpolatedDepthMap ? <TileLayer url={`${config.api_url}/depth_map/interpolated/tile/{z}/{x}/{y}`} /> : ""}
                                     {settings.showEnc ? <MapEncCells bounds={settings.encBounds} search={settings.encSearch} /> : ""}
                                     {settings.encIdForTrack ? <MapTrack enc_cell_id={settings.encIdForTrack} ship_types={settings.shipTypesSelected.map((ship) => ship.value)} /> : ""}
 
@@ -54,6 +56,26 @@ function App() {
                         </SettingsContext.Consumer>
                     </MapContainer>
                 </header>
+                <SettingsContext.Consumer>
+                    {({ settings }) => (
+                        <>
+                            {settings.showDepthMap ? (
+                                <div className="legend">
+                                    <img src={`${config.api_url}/depth_map/raw/legend`} />
+                                </div>
+                            ) : (
+                                ""
+                            )}
+                            {settings.showInterpolatedDepthMap ? (
+                                <div className="legend">
+                                    <img src={`${config.api_url}/depth_map/interpolated/legend`} />
+                                </div>
+                            ) : (
+                                ""
+                            )}
+                        </>
+                    )}
+                </SettingsContext.Consumer>
             </SettingsContext.Provider>
         </>
     );

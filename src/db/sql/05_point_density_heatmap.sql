@@ -1,6 +1,6 @@
--- trafic_density_heatmap
+-- point_density_heatmap
 
-CREATE TABLE IF NOT EXISTS heatmap_trafic_density
+CREATE TABLE IF NOT EXISTS heatmap_point_density
 (
 	i int,
 	j int,

@@ -6,6 +6,14 @@ from ais_app.services.enc_cell_service import EncCellService
 
 blueprint = Blueprint("enc_cells", __name__)
 
+"""
+@api {get} /enc_cells/import
+@apiGroup EncCells
+@apiDescription Imports ENC_cells from txt files in import folder
+
+@apiSuccess {bool} success True if succeeded
+"""
+
 
 @blueprint.route("/import")
 @inject
@@ -14,6 +22,18 @@ def import_enc_data(
 ):
     enc_cell_service.import_enc_cell_files()
     return "Ok"
+
+
+"""
+@api {get} /enc_cells/get_by_area_bounds
+@apiGroup EncCells
+@apiDescription Gets enc cells within some area bounds.
+
+@apiParam {number[2][]} Pairs of area-bounds to filter for
+@apiParam {string} search_string Free text filter
+
+@apiSuccess {json} enc_cells The found enc_cells
+"""
 
 
 @blueprint.route("/get_by_area_bounds")

@@ -14,3 +14,5 @@ shapely
 simplejson
 pqdm
 pillow
+matplotlib
+pykrige

@@ -52,14 +52,17 @@ class TrackRepository:
 
         query = """
             SELECT
-                id, destination, cargo_type, eta, mmsi, imo, mobile_type, callsign, name, ship_type, width, length,
-                draught, a, b, c, d, begin_ts, end_ts,
+                t.id, t.destination, t.cargo_type, t.eta, s.mmsi, s.imo, s.mobile_type, s.callsign,
+                s.name, s.ship_type, s.width, s.length,
+                t.draught, s.a, s.b, s.c, s.d, t.begin_ts, t.end_ts,
                 ST_AsGeoJson(ST_FlipCoordinates(t.geom)) AS coordinates
             FROM public.track_with_geom AS t
             JOIN enc_cells AS enc ON ST_Intersects(enc.location, t.geom)
+            JOIN ship s ON s.id = t.ship_id
             WHERE
                 enc.cell_id = %s AND
-                t.ship_type = ANY (string_to_array(%s, ','))
+                s.ship_type = ANY (string_to_array(%s, ',')) AND
+                t.end_ts < '2021-03-13' -- todo remove this when we add daterange
         """
 
         cursor.execute(

@@ -1,18 +1,43 @@
 import configparser
+import math
 import multiprocessing
-import queue
 from datetime import datetime
 
 import numpy as np
-from pqdm.threads import pqdm
 import geopy.distance
 import pandas as pd
+from psycopg2.extras import execute_values
 
 from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
 
 
 class SpaceDataPreprocessingService:
+    class Consumer(multiprocessing.Process):
+        def __init__(self, task_queue, result_queue):
+            multiprocessing.Process.__init__(self)
+            self.failed_mmsi = result_queue
+            self.task_queue = task_queue
+
+        def run(self):
+            conn = SqlConnector().get_db_connection()
+            conn.set_session(autocommit=True)
+
+            sdps = SpaceDataPreprocessingService()
+            while True:
+                next_task = self.task_queue.get()
+                if next_task is None:
+                    print("Tasks Complete")
+                    self.task_queue.task_done()
+                    break
+
+                success = sdps.cluster_mmsi(next_task, conn)
+                self.task_queue.task_done()
+                if not success:
+                    self.failed_mmsi.put(next_task)
+            conn.close()
+            return
+
     sql_connector = SqlConnector()
 
     def __init__(self):
@@ -35,7 +60,7 @@ class SpaceDataPreprocessingService:
         cursor = connection.cursor()
 
         # Lets remove all the previous clustering.
-        cursor.execute("TRUNCATE track RESTART IDENTITY CASCADE")
+        cursor.execute("TRUNCATE ship RESTART IDENTITY CASCADE")
 
         print("[CLUSTER] Cleared previous cluster.")
 
@@ -53,29 +78,49 @@ class SpaceDataPreprocessingService:
         connection.close()
 
         print("[CLUSTER] Cleared error_rates.")
-        tcp = self.sql_connector.get_threading_pool()
-        failed_mmsi_queue = queue.Queue()
 
-        pqdm(
-            mmsi_list,
-            lambda x: self.cluster_mmsi(x, tcp, failed_mmsi_queue),
-            n_jobs=multiprocessing.cpu_count(),
-        )
-        # Uncomment this line and comment the line above to run as single thread.
-        # [self.cluster_mmsi(mmsi) for mmsi in tqdm(mmsi_list)]
-
-        tcp.tcp.closeall()
-
-        assert len(failed_mmsi_queue) == 0
+        # append none to signal end of queue.
+        mmsi_list.append(None)
+        self.__cluster_mmsi_list(mmsi_list)
 
         connection = self.sql_connector.get_db_connection()
         cursor = connection.cursor()
 
         cursor.execute("REFRESH MATERIALIZED VIEW track_with_geom")
-        cursor.execute("REFRESH MATERIALIZED VIEW simple_heatmap")
+        cursor.execute(
+            "REFRESH MATERIALIZED VIEW track_subdivided_with_geom_and_draught"
+        )
 
         connection.commit()
         connection.close()
+
+    @staticmethod
+    def __cluster_mmsi_list(mmsi_list):
+        # inspired by https://stackoverflow.com/q/7555680/10562012
+        tasks = multiprocessing.JoinableQueue()
+        results = multiprocessing.Queue()
+
+        num_consumers = multiprocessing.cpu_count()
+
+        consumers = [
+            SpaceDataPreprocessingService.Consumer(tasks, results)
+            for i in range(num_consumers)
+        ]
+
+        for w in consumers:
+            w.start()
+
+        for mmsi in mmsi_list:
+            tasks.put(mmsi)
+
+        for w in consumers:
+            tasks.put(None)
+
+        for w in consumers:
+            w.join()
+
+        if not results.empty():
+            raise ValueError(f"{len(results)} mmsis failed processing.")
 
     @staticmethod
     def __before_invalid_coords_and_ship_types_and_intersection(cursor):
@@ -201,19 +246,8 @@ class SpaceDataPreprocessingService:
         """
         cursor.execute(query_inserts)
 
-    @staticmethod
-    def replace_nan_with_none(str_in):
-        if str_in == "nan":
-            return None
-        return str_in
-
-    @staticmethod
-    def replace_nan_with_none_series(series):
-        series.apply(SpaceDataPreprocessingService.replace_nan_with_none)
-
-    def cluster_mmsi(self, mmsi, tcp, failed_mmsi_queue):
+    def cluster_mmsi(self, mmsi, connection):
         try:
-            connection = tcp.getconn()
             cursor = connection.cursor()
 
             query = """
@@ -257,10 +291,10 @@ class SpaceDataPreprocessingService:
             self.__insert_tracks(tracks, cursor)
 
             connection.commit()
-            tcp.putconn(connection)
+            return True
         except BaseException as e:
             print(e)
-            failed_mmsi_queue.put(mmsi)
+            return False
 
     @staticmethod
     def __insert_tracks(tracks, cursor):
@@ -305,54 +339,133 @@ class SpaceDataPreprocessingService:
                 .idxmax(skipna=False)
             )
 
-            most_common_row_with_none_instead_of_nan = [
-                None if type(x).__module__ == np.__name__ and np.isnan(x) else x
+            mcr = [
+                None
+                if (type(x).__module__ == np.__name__ and np.isnan(x))
+                or (type(x) == float and math.isnan(x))
+                else x
                 for x in most_common_row
             ]
 
             query = """
-                INSERT INTO public.track (
-                    destination,
-                    cargo_type,
-                    eta,
-                    mmsi,
-                    imo,
-                    mobile_type,
-                    callsign,
-                    name,
-                    ship_type,
-                    width,
-                    length,
-                    draught,
-                    a,
-                    b,
-                    c,
-                    d
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                """
-            cursor.execute(query, most_common_row_with_none_instead_of_nan)
-            track_id = cursor.fetchall()[0]
-
-            # insert points
-            for point in track:
+                SELECT id FROM ship WHERE (
+                    mmsi IS NOT DISTINCT FROM %s
+                    AND
+                    imo IS NOT DISTINCT FROM %s
+                    AND
+                    mobile_type IS NOT DISTINCT FROM %s
+                    AND
+                    callsign IS NOT DISTINCT FROM %s
+                    AND
+                    name IS NOT DISTINCT FROM %s
+                    AND
+                    ship_type IS NOT DISTINCT FROM %s
+                    AND
+                    width IS NOT DISTINCT FROM %s
+                    AND
+                    length IS NOT DISTINCT FROM %s
+                    AND
+                    a IS NOT DISTINCT FROM %s
+                    AND
+                    b IS NOT DISTINCT FROM %s
+                    AND
+                    c IS NOT DISTINCT FROM %s
+                    AND
+                    d IS NOT DISTINCT FROM %s
+                )
+            """
+            cursor.execute(
+                query,
+                (
+                    mcr[3],
+                    mcr[4],
+                    mcr[5],
+                    mcr[6],
+                    mcr[7],
+                    mcr[8],
+                    mcr[9],
+                    mcr[10],
+                    mcr[12],
+                    mcr[13],
+                    mcr[14],
+                    mcr[15],
+                ),
+            )
+            if cursor.rowcount > 0:
+                ship_id = cursor.fetchone()[0]
+            else:
                 query = """
-                                INSERT INTO public.points
-                                (track_id, timestamp, location, rot, sog, cog, heading, position_fixing_device_type)
-                                     VALUES (%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)"""
+                INSERT INTO ship (
+                    mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                -- Setting name is done to make it return the existing rows id.
+                -- As the only constraint is the uniqueness, this cannot risk changing anything.
+                ON CONFLICT
+                    (mmsi, imo, mobile_type, callsign, name, ship_type, width, length, a,b,c,d)
+                DO UPDATE SET name=EXCLUDED.name
+                RETURNING ID
+                """
                 cursor.execute(
                     query,
                     (
-                        track_id,
-                        point["timestamp"],
-                        point["longitude"],
-                        point["latitude"],
-                        point["rot"],
-                        point["sog"],
-                        point["cog"],
-                        point["heading"],
-                        point["position_fixing_device_type"],
+                        mcr[3],
+                        mcr[4],
+                        mcr[5],
+                        mcr[6],
+                        mcr[7],
+                        mcr[8],
+                        mcr[9],
+                        mcr[10],
+                        mcr[12],
+                        mcr[13],
+                        mcr[14],
+                        mcr[15],
                     ),
                 )
+                ship_id = cursor.fetchone()[0]
+
+            query = """
+                INSERT INTO public.track (
+                    ship_id,
+                    destination,
+                    cargo_type,
+                    eta,
+                    draught
+                ) VALUES (%s, %s, %s, %s, %s) RETURNING id;
+                """
+            cursor.execute(query, (ship_id, mcr[0], mcr[1], mcr[2], mcr[11]))
+            track_id = cursor.fetchall()[0]
+
+            # insert points
+            data = [
+                (
+                    track_id,
+                    point["timestamp"],
+                    point["longitude"],
+                    point["latitude"],
+                    point["rot"],
+                    point["sog"],
+                    point["cog"],
+                    point["heading"],
+                    point["position_fixing_device_type"],
+                )
+                for point in track
+            ]
+            insert_query = """
+                INSERT INTO public.points
+                    (
+                        track_id, timestamp, location, rot,
+                        sog, cog, heading, position_fixing_device_type
+                    ) values %s
+                """
+            execute_values(
+                cursor,
+                insert_query,
+                data,
+                template="(%s, %s, ST_SetSRID(ST_Point(%s, %s),  4326), %s, %s, %s, %s, %s)",
+                page_size=500,
+            )
 
     def space_data_preprocessing(
         self,
@@ -467,7 +580,7 @@ class SpaceDataPreprocessingService:
 
         if a["sog"] is None:
             if b["sog"] is None:
-                return 0
+                return 0 if actual_speed <= 50 else 2 * self.threshold_space
             else:
                 return 2 * self.threshold_space
 

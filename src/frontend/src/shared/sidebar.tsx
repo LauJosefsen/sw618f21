@@ -74,6 +74,15 @@ export const CustomSidebar = () => {
                                 {settings.showDepthMap ? "Hide" : "Show"}
                             </Button>
 
+                            <h3>Interpolated depth map</h3>
+                            <Button
+                                onClick={() => {
+                                    setSettings({ ...settings, showInterpolatedDepthMap: !settings.showInterpolatedDepthMap });
+                                }}
+                            >
+                                {settings.showInterpolatedDepthMap ? "Hide" : "Show"}
+                            </Button>
+
                             <Button className="sidebar-button" onClick={() => setSidebarOpen(false)}>
                                 Close sidebar
                             </Button>

@@ -160,3 +160,21 @@ INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Småland
 INSERT INTO public.enc_cells (cell_title, location, cell_name) VALUES ('Aabenraa Havn', '01030000000100000005000000802F4CA60AD62240B867F20762824B40802F4CA60AD62240B0D85F764F864B406066666666E62240B0D85F764F864B406066666666E62240B867F20762824B40802F4CA60AD62240B867F20762824B40', NULL);
 
 UPDATE public.enc_cells SET location = st_setsrid(location, 4326);
+
+CREATE VIEW public.enc_cell_with_utm32n
+AS
+ WITH enc_cell AS (
+         SELECT enc_cells.cell_id,
+            enc_cells.cell_name,
+            enc_cells.cell_title,
+            enc_cells.location,
+            st_transform(enc_cells.location, 25832) AS geom
+           FROM enc_cells
+        )
+ SELECT enc_cell.cell_id,
+    enc_cell.cell_name,
+    enc_cell.cell_title,
+    enc_cell.location,
+    enc_cell.geom,
+    st_setsrid(st_makeenvelope(st_xmin(enc_cell.geom), st_ymin(enc_cell.geom), st_xmax(enc_cell.geom::box3d), st_ymax(enc_cell.geom)), 25832) AS utm32n_geom
+   FROM enc_cell
