@@ -26,7 +26,7 @@ BEGIN
     (
         SELECT
         (
-            ST_SquareGrid(grid_size_meters, ST_Transform(location, 3857))
+            ST_SquareGrid(grid_size_meters, ST_Transform(location, 25832))
         ).* as geom
         FROM
         (
