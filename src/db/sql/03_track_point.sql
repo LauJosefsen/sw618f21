@@ -132,3 +132,8 @@ BEGIN
 END
 $BODY$;
 
+
+CREATE INDEX track_subdivided_with_geom_and_draught_geom_index
+    ON public.track_subdivided_with_geom_and_draught USING gist
+    (geom)
+

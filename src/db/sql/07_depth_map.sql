@@ -18,30 +18,6 @@ CREATE TABLE IF NOT EXISTS public.interpolated_depth
     FOREIGN KEY (i,j) REFERENCES grid(i,j) deferrable
 );
 
-
-CREATE OR REPLACE FUNCTION public.generate_depth_map(
-	)
-    RETURNS boolean
-    LANGUAGE 'plpgsql'
-AS $BODY$
-BEGIN
-    TRUNCATE max_draught_map;
-    INSERT INTO max_draught_map
-    SELECT
-        grid.i, grid.j, max(t.draught)
-    FROM grid
-    JOIN track_with_geom  AS t ON ST_Intersects(grid.geom,t.geom)
-    GROUP BY grid.i, grid.j;
-
-    DELETE FROM max_draught_map WHERE min_depth is null;
-
-    RETURN TRUE;
-END
-$BODY$;
-
-
-
-
 -- FUNCTION: public.get_tile_grids(integer, integer)
 CREATE OR REPLACE FUNCTION public.get_tile_grids(
 	min_zoom integer,
@@ -122,8 +98,6 @@ BEGIN
 			WHERE grid.i >= i_loop AND grid.i < i_loop+downscale_ratio AND grid.j>= j_loop AND grid.j < j_loop+downscale_ratio HAVING max(min_depth) IS NOT null;
 		END LOOP;
 	END LOOP;
-
-
 
 	return query SELECT * FROM downscaled_raw_depth_map;
 END
