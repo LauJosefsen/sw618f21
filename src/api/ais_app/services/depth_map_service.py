@@ -27,7 +27,7 @@ class DepthMapService:
             "interpolated_tiles_folder"
         ]
 
-    def get_within_box(self, bounds: MinMaxXy):
+    def get_within_box_raw(self, bounds: MinMaxXy):
         return self.__depth_map_repository.get_within_box(bounds)
 
     def get_map_tiles(self, min_zoom: int, max_zoom: int):
@@ -93,52 +93,8 @@ class DepthMapService:
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
         )
 
-        for tile in tqdm(tiles):
-            coordinates = tile["geom"]["coordinates"][0]
-            tile_bounds = MinMaxXy.from_coords(coordinates)
-
-            depths = self.get_within_box(tile_bounds)
-
-            if len(depths) == 0:
-                continue
-
-            img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            for depth in depths:
-                coordinates = depth["geom"]["coordinates"][0]
-                grid_bounds = MinMaxXy.from_coords(coordinates)
-
-                # remove offset
-                # n-s is reversed, as increase in pixel, is moving down,
-                # while increase in latitude is moving up.
-                grid_pixel_bounds = MinMaxXy(
-                    self.map(
-                        grid_bounds.min_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255
-                    ),
-                    self.map(
-                        grid_bounds.min_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0
-                    ),
-                    self.map(
-                        grid_bounds.max_x, tile_bounds.min_x, tile_bounds.max_x, 0, 255
-                    ),
-                    self.map(
-                        grid_bounds.max_y, tile_bounds.min_y, tile_bounds.max_y, 255, 0
-                    ),
-                )
-
-                min_depth = depth["depth"]
-                min_depth_color = int(self.map(min_depth, 0, max_depth, 0, 255))
-                color = (min_depth_color, 0, 255 - min_depth_color)
-
-                draw.rectangle(
-                    [
-                        (grid_pixel_bounds.min_x, grid_pixel_bounds.min_y),
-                        (grid_pixel_bounds.max_x, grid_pixel_bounds.max_y),
-                    ],
-                    fill=color,
-                )
-
-            img.save(os.path.join(folder, f"{tile['z']}-{tile['x']}-{tile['y']}.png"))
+        tasks = [(tile, max_depth, folder, self.get_within_box_raw) for tile in tiles]
+        pqdm(tasks, self.render_tile, n_jobs=multiprocessing.cpu_count())
 
     def render_interpolated_depth_map(self, min_zoom, max_zoom):
         tiles = self.get_map_tiles(min_zoom, max_zoom)
@@ -150,16 +106,18 @@ class DepthMapService:
         self.render_legend(
             max_depth, os.path.join(folder, "legend.svg"), "Depth in meters"
         )
-        tasks = [(tile, max_depth, folder) for tile in tiles]
+        tasks = [
+            (tile, max_depth, folder, self.get_within_box_interpolated)
+            for tile in tiles
+        ]
         pqdm(tasks, self.render_tile, n_jobs=multiprocessing.cpu_count())
 
     def render_tile(self, param):
-        tile, max_depth, folder = param
+        tile, max_depth, folder, hook_to_get_depths_in_tile = param
         coordinates = tile["geom"]["coordinates"][0]
         tile_bounds = MinMaxXy.from_coords(coordinates)
 
-        max_varians = self.__depth_map_repository.get_max_varians_using_histogram()
-        depths = self.get_within_box_interpolated(tile_bounds, max_varians)
+        depths = hook_to_get_depths_in_tile(tile_bounds)
 
         if len(depths) == 0:
             return
@@ -215,7 +173,8 @@ class DepthMapService:
 
         img.save(f"{folder}/{tile['z']}-{tile['x']}-{tile['y']}.png")
 
-    def get_within_box_interpolated(self, tile_bounds, max_varians):
+    def get_within_box_interpolated(self, tile_bounds):
+        max_varians = self.__depth_map_repository.get_max_varians_using_histogram()
         return self.__depth_map_repository.get_within_box_interpolated(
             tile_bounds, max_varians
         )
