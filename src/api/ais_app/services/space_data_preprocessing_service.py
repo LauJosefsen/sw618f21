@@ -453,7 +453,7 @@ class SpaceDataPreprocessingService:
                 for point in track
             ]
             insert_query = """
-                INSERT INTO public.points 
+                INSERT INTO public.points
                     (
                         track_id, timestamp, location, rot,
                         sog, cog, heading, position_fixing_device_type

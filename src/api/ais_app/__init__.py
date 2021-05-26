@@ -6,6 +6,7 @@ from .blueprints import data_management, enc_cells, heatmaps, tracks, depth_map
 from .containers import Container
 from simplejson import JSONEncoder
 
+
 # https://stackoverflow.com/a/56562567
 class DateTimeEncoder(JSONEncoder):
     def default(self, z):

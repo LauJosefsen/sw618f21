@@ -105,7 +105,8 @@ class DepthMapRepository:
                     with draught_map as (
                     SELECT min_depth, st_centroid(st_transform(g.geom, 25832)) as geom FROM max_draught_map
                     JOIN grid_1k g on max_draught_map.i = g.i and max_draught_map.j = g.j
-                    JOIN enc_cell_with_utm32n enc_cell ON st_intersects(enc_cell.utm32n_geom, st_transform(g.geom, 25832))
+                    JOIN enc_cell_with_utm32n enc_cell
+                        ON st_intersects(enc_cell.utm32n_geom, st_transform(g.geom, 25832))
                     WHERE enc_cell.cell_id = %s
                     )
                     SELECT ST_X(geom) as x, ST_y(geom) as y, min_depth as z FROM draught_map
@@ -167,7 +168,7 @@ class DepthMapRepository:
                             depth,
                             varians
                         FROM interpolated_depth
-                        JOIN grid_1k grid ON 
+                        JOIN grid_1k grid ON
                             grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
@@ -223,7 +224,7 @@ class DepthMapRepository:
             SELECT g.i, g.j, max(t.draught)
             FROM grid_1k g
             JOIN track_subdivided_with_geom_and_draught t ON ST_Intersects(t.geom, g.geom)
-            WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10 
+            WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10
             GROUP BY g.i, g.j
         """,
             (

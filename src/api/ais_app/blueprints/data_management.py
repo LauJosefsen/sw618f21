@@ -30,7 +30,7 @@ def import_ais_data(
 """
 @api {get} /data_management/cluster
 @apiGroup Data management
-@apiDescription Runs the clustering algorithm on the input data, and splits it into ships, tracks and points. Removes outliers.
+@apiDescription Runs the clustering algorithm on the input data, and splits it into ships, tracks and points.
 
 @apiSuccess {bool} success True if succeeded
 """

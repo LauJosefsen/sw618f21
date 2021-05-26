@@ -1,9 +1,5 @@
-import os
-
 from dependency_injector.wiring import inject, Provide
 from flask import Blueprint, send_file, request, jsonify
-from PIL import Image, ImageDraw
-from tqdm import tqdm
 
 from ais_app.containers import Container
 from ais_app.services.depth_map_service import DepthMapService
@@ -142,7 +138,7 @@ def generate_depth_map(
 @apiParam {number} enc_cell_id The enc cell to render it for.
 @apiParam {number} min_zoom The minimum zoom level to render tiles to
 @apiParam {number} max_zoom The maximum zoom level to render tiles to
-@apiParam {number} downscale If set to more than 1, it will downscale the raw depth map by this factor in both x-y before interpolating.
+@apiParam {number} downscale If set to more than 1, it will downscale the raw depth map by this factor.
 @apiParam {number} do_generate If set to 1, then does generation
 
 @apiSuccess {bool} success True if succeeded

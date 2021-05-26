@@ -5,7 +5,6 @@ import os
 from PIL import Image, ImageDraw
 from pqdm.threads import pqdm
 from pykrige import OrdinaryKriging
-from tqdm import tqdm
 import pylab as pl
 
 from ais_app.helpers import MinMaxXy
@@ -193,7 +192,7 @@ class DepthMapService:
 
         a = np.array([[min, max]])
         pl.figure(figsize=(9, 1.5))
-        img = pl.imshow(a, cmap=newcmp)
+        pl.imshow(a, cmap=newcmp)
         pl.gca().set_visible(False)
         cax = pl.axes([0.02, 0.8, 0.96, 0.1])
         pl.colorbar(orientation="horizontal", cax=cax, label=description)

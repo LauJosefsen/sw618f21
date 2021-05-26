@@ -1,13 +1,7 @@
-import json
 import multiprocessing
-import os
 
-from ais_app.repository.enc_cell_repository import EncCellRepository
 from ais_app.repository.grid_repository import GridRepository
 from ais_app.repository.sql_connector import SqlConnector
-from ais_app.services.space_data_preprocessing_service import (
-    SpaceDataPreprocessingService,
-)
 
 
 class GridService:

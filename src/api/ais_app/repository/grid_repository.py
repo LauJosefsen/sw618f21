@@ -1,7 +1,4 @@
-import json
-import pandas as pd
-
-from ais_app.helpers import build_dict, MinMaxXy
+from ais_app.helpers import build_dict
 from ais_app.repository.sql_connector import SqlConnector
 
 
@@ -16,7 +13,7 @@ class GridRepository:
         with min_max AS (SELECT min(i) as min_i, min(j) as min_j, max(i) as max_i, max(j) as max_j FROM {grid_name})
         SELECT
             *
-            FROM 
+            FROM
                 generate_series(
                     (SELECT min_max.min_i FROM min_max),
                     (SELECT min_max.max_i FROM min_max),

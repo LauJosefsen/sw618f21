@@ -26,7 +26,7 @@ class HeatmapRepository:
                             heatmap.intensity > 0 AND
                             heatmap.ship_type = ANY (string_to_array(%s, ','))
                     ),
-                    max_intensity AS 
+                    max_intensity AS
                     (SELECT MAX(intensity) as max FROM heatmap_data)
                     SELECT
                         ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
@@ -58,7 +58,7 @@ class HeatmapRepository:
                         heatmap.intensity > 0 AND
                         heatmap.ship_type = ANY (string_to_array(%s, ','))
                 ),
-                max_intensity AS 
+                max_intensity AS
                     (SELECT MAX(intensity) as max FROM heatmap_data)
                 SELECT
                     ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
@@ -109,7 +109,7 @@ class HeatmapRepository:
         cursor.execute(
             """
             INSERT INTO heatmap_point_density
-            SELECT g.i, g.j, s.ship_type, 
+            SELECT g.i, g.j, s.ship_type,
                 (
                     COUNT(p) FILTER (WHERE s.mobile_type = 'Class B') * 3 +
                     COUNT(p) FILTER (WHERE s.mobile_type = 'Class A')
@@ -118,7 +118,7 @@ class HeatmapRepository:
             JOIN points p ON ST_Contains(g.geom, p.location)
             JOIN track t on p.track_id = t.id
             JOIN ship s on t.ship_id = s.id
-            WHERE  g.i >= %s AND g.i < %s + 100 AND g.j >= %s AND g.j < %s + 100 
+            WHERE  g.i >= %s AND g.i < %s + 100 AND g.j >= %s AND g.j < %s + 100
             AND p.sog > 2 AND p.sog < 4.4
             GROUP BY g.i, g.j, s.ship_type, g.geom
             HAVING (
@@ -136,7 +136,7 @@ class HeatmapRepository:
         cursor.execute(
             """
             INSERT INTO heatmap_trafic_density
-            SELECT g.i, g.j, s.ship_type, 
+            SELECT g.i, g.j, s.ship_type,
                 SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
                 /(ST_Area(g.geom, true) * %s)
             FROM grid_2k g
