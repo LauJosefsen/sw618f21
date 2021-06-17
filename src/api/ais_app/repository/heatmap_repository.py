@@ -51,7 +51,7 @@ class HeatmapRepository:
                 WITH heatmap_data AS (
                     SELECT grid.geom, intensity
                     FROM heatmap_trafic_density as heatmap
-                    JOIN grid_2k grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
+                    JOIN grid grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
                     JOIN enc_cells as enc on st_contains(enc.location, grid.geom)
                     WHERE
                         enc.cell_id = %s AND
@@ -139,7 +139,7 @@ class HeatmapRepository:
             SELECT g.i, g.j, s.ship_type,
                 SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
                 /(ST_Area(g.geom, true) * %s)
-            FROM grid_2k g
+            FROM grid g
             JOIN track_subdivided_with_geom_and_draught ti ON ti && g
             JOIN track_with_geom t ON t.id = ti.track_id
             JOIN ship s on t.ship_id = s.id

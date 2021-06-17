@@ -21,7 +21,7 @@ class DepthMapRepository:
                             ST_AsGeoJson(ST_Transform(grid.geom, 3857)) as geom,
                             max_draught_map.min_depth as depth
                         FROM max_draught_map
-                        JOIN grid_1k grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
+                        JOIN grid grid ON grid.i = max_draught_map.i AND grid.j = max_draught_map.j
                         WHERE min_depth is not null AND ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
                                 ST_Point(%s, %s),
@@ -104,7 +104,7 @@ class DepthMapRepository:
             query = """
                     with draught_map as (
                     SELECT min_depth, st_centroid(st_transform(g.geom, 25832)) as geom FROM max_draught_map
-                    JOIN grid_1k g on max_draught_map.i = g.i and max_draught_map.j = g.j
+                    JOIN grid g on max_draught_map.i = g.i and max_draught_map.j = g.j
                     JOIN enc_cell_with_utm32n enc_cell
                         ON st_intersects(enc_cell.utm32n_geom, st_transform(g.geom, 25832))
                     WHERE enc_cell.cell_id = %s
@@ -141,7 +141,7 @@ class DepthMapRepository:
             )
             query = """
                         INSERT INTO interpolated_depth
-                        SELECT i, j, %s, %s FROM grid_1k grid
+                        SELECT i, j, %s, %s FROM grid grid
                         WHERE ST_Contains(grid.geom, st_transform(ST_SetSrid(st_makepoint(%s, %s), 25832), 4326));
                     """
             cursor.execute(
@@ -168,7 +168,7 @@ class DepthMapRepository:
                             depth,
                             varians
                         FROM interpolated_depth
-                        JOIN grid_1k grid ON
+                        JOIN grid grid ON
                             grid.i = interpolated_depth.i AND grid.j = interpolated_depth.j
                         WHERE ST_Intersects(
                             ST_Transform(ST_SetSRID(ST_MakeBox2D(
@@ -222,7 +222,7 @@ class DepthMapRepository:
             """
             INSERT INTO max_draught_map
             SELECT g.i, g.j, max(t.draught)
-            FROM grid_1k g
+            FROM grid g
             JOIN track_subdivided_with_geom_and_draught t ON ST_Intersects(t.geom, g.geom)
             WHERE  g.i >= %s AND g.i < %s+10 AND g.j >= %s AND g.j < %s+10
             GROUP BY g.i, g.j

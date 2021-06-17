@@ -51,7 +51,7 @@ class HeatmapService:
             10,
             HeatmapRepository.apply_trafic_density_generate,
             shared_info=hours,
-            grid_name="grid_2k",
+            grid_name="grid",
         )
 
     def generate_point_density(self):

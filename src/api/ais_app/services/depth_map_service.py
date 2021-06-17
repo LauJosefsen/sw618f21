@@ -213,7 +213,7 @@ class DepthMapService:
             10,
             DepthMapRepository.apply_raw_generate,
             num_consumers=12,
-            grid_name="grid_1k",
+            grid_name="grid",
         )
 
     def get_max_depth_interpolated(self):
