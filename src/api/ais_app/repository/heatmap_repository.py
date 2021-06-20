@@ -140,7 +140,7 @@ class HeatmapRepository:
                 SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
                 /(ST_Area(g.geom, true) * %s)
             FROM grid g
-            JOIN track_subdivided_with_geom_and_draught ti ON ti && g
+            JOIN track_subdivided_with_geom_and_draught ti ON ti.geom && g.geom
             JOIN track_with_geom t ON t.id = ti.track_id
             JOIN ship s on t.ship_id = s.id
             WHERE  g.i >= %s AND g.i < %s + 10 AND g.j >= %s AND g.j < %s + 10
