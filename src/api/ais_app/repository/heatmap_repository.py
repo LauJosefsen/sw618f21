@@ -62,7 +62,7 @@ class HeatmapRepository:
                     (SELECT MAX(intensity) as max FROM heatmap_data)
                 SELECT
                     ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
-                    (intensity * 100)/(SELECT max FROM max_intensity) as intensity
+                    (intensity * 1000)/(SELECT max FROM max_intensity) as intensity
                 FROM heatmap_data
             """
         cursor.execute(query, (enc_cell_id, ",".join(ship_types)))
@@ -140,8 +140,7 @@ class HeatmapRepository:
                 SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
                 /(ST_Area(g.geom, true) * %s)
             FROM grid g
-            JOIN track_subdivided_with_geom_and_draught ti ON ti.geom && g.geom
-            JOIN track_with_geom t ON t.id = ti.track_id
+            JOIN track_with_geom t ON t.geom && g.geom
             JOIN ship s on t.ship_id = s.id
             WHERE  g.i >= %s AND g.i < %s + 10 AND g.j >= %s AND g.j < %s + 10
             GROUP BY g.i, g.j, s.ship_type, g.geom
