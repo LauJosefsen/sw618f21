@@ -51,7 +51,7 @@ class HeatmapRepository:
                 WITH heatmap_data AS (
                     SELECT grid.geom, intensity
                     FROM heatmap_trafic_density as heatmap
-                    JOIN grid_2k grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
+                    JOIN grid grid ON grid.i = heatmap.i AND grid.j  = heatmap.j
                     JOIN enc_cells as enc on st_contains(enc.location, grid.geom)
                     WHERE
                         enc.cell_id = %s AND
@@ -62,7 +62,7 @@ class HeatmapRepository:
                     (SELECT MAX(intensity) as max FROM heatmap_data)
                 SELECT
                     ST_AsGeoJson(ST_FlipCoordinates(ST_Centroid(geom))) as grid_point,
-                    (intensity * 100)/(SELECT max FROM max_intensity) as intensity
+                    (intensity * 1000)/(SELECT max FROM max_intensity) as intensity
                 FROM heatmap_data
             """
         cursor.execute(query, (enc_cell_id, ",".join(ship_types)))
@@ -136,17 +136,21 @@ class HeatmapRepository:
         cursor.execute(
             """
             INSERT INTO heatmap_trafic_density
-            SELECT g.i, g.j, s.ship_type,
-                SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
-                /(ST_Area(g.geom, true) * %s)
-            FROM grid_2k g
-            JOIN track_subdivided_with_geom_and_draught ti ON ti && g
-            JOIN track_with_geom t ON t.id = ti.track_id
-            JOIN ship s on t.ship_id = s.id
-            WHERE  g.i >= %s AND g.i < %s + 10 AND g.j >= %s AND g.j < %s + 10
-            GROUP BY g.i, g.j, s.ship_type, g.geom
-            HAVING SUM(ST_NumGeometries(ST_ClipByBox2d(t.geom, g.geom)))
-                /(ST_Area(g.geom, true) * %s) != 0
+            SELECT tg.i, tg.j, tg.ship_type,
+                SUM(ST_NumGeometries(ST_ClipByBox2d(twg.geom, tg.geom)))
+                /(ST_Area(tg.geom, true) * %s)
+            FROM
+                (SELECT g.i, g.j, g.geom, t.id, s.ship_type
+                FROM grid g
+                JOIN track_subdivided_with_geom_and_draught ti ON ti.geom && g.geom
+                JOIN track t ON t.id = ti.track_id
+                JOIN ship s on t.ship_id = s.id
+                WHERE  g.i >= %s AND g.i < %s + 10 AND g.j >= %s AND g.j < %s + 10
+                GROUP BY g.i, g.j, s.ship_type, g.geom, t.id) tg
+            JOIN track_with_geom twg ON tg.id = twg.id
+            GROUP BY tg.i, tg.j, tg.ship_type, tg.geom
+            HAVING SUM(ST_NumGeometries(ST_ClipByBox2d(twg.geom, tg.geom)))
+                            /(ST_Area(tg.geom, true) * %s) != 0
         """,
             (shared_info, task["i"], task["i"], task["j"], task["j"], shared_info),
         )
